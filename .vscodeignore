@@ -1,0 +1,12 @@
+src/**
+out/test/**
+**/*.map
+**/*.ts
+.vscode/**
+tsconfig.json
+node_modules/**
+*.vsix
+patina-spec.md
+out/integration/**
+.test-workspace/**
+.gitignore

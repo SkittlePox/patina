@@ -1,0 +1,328 @@
+{
+  "name": "patina",
+  "displayName": "Patina",
+  "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "patina.markRead",
+        "title": "Mark Lines as Read",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.markNext",
+        "title": "Mark Lines as Attend To Next",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.markQuestion",
+        "title": "Mark Lines as Question",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.mark",
+        "title": "Mark Lines As\u2026",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.clearMarks",
+        "title": "Clear Marks on Lines",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.markFileRead",
+        "title": "Mark Whole File(s) as Read",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.markFileAs",
+        "title": "Mark Whole File(s) As\u2026",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.clearFileMarks",
+        "title": "Clear All Marks in File(s)",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.revalidateAll",
+        "title": "Re-check All Marks Against Current File Contents",
+        "category": "Patina"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "patina.editorContext",
+        "label": "Patina"
+      },
+      {
+        "id": "patina.explorerContext",
+        "label": "Patina"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "patina.editorContext",
+          "group": "9_patina",
+          "when": "resourceScheme == file"
+        }
+      ],
+      "patina.editorContext": [
+        {
+          "command": "patina.markRead",
+          "group": "1_mark@1"
+        },
+        {
+          "command": "patina.markNext",
+          "group": "1_mark@2"
+        },
+        {
+          "command": "patina.markQuestion",
+          "group": "1_mark@3"
+        },
+        {
+          "command": "patina.mark",
+          "group": "1_mark@4"
+        },
+        {
+          "command": "patina.clearMarks",
+          "group": "2_clear@1"
+        },
+        {
+          "command": "patina.markFileRead",
+          "group": "3_file@1"
+        },
+        {
+          "command": "patina.clearFileMarks",
+          "group": "3_file@2"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "patina.explorerContext",
+          "group": "7_modification@9"
+        }
+      ],
+      "patina.explorerContext": [
+        {
+          "command": "patina.markFileRead",
+          "group": "1_mark@1"
+        },
+        {
+          "command": "patina.markFileAs",
+          "group": "1_mark@2"
+        },
+        {
+          "command": "patina.clearFileMarks",
+          "group": "2_clear@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "patina.markRead",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.markNext",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.markQuestion",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.mark",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.clearMarks",
+          "when": "editorIsOpen"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "patina.markRead",
+        "key": "ctrl+alt+r",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "patina.markNext",
+        "key": "ctrl+alt+n",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "patina.markQuestion",
+        "key": "ctrl+alt+q",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "patina.clearMarks",
+        "key": "ctrl+alt+u",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "Patina",
+      "properties": {
+        "patina.categories": {
+          "type": "object",
+          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has a `color` (any CSS color, use transparency) and an optional `label`. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
+          "default": {
+            "next": {
+              "label": "Attend to next",
+              "color": "rgba(64, 140, 255, 0.22)"
+            },
+            "question": {
+              "label": "Question",
+              "color": "rgba(180, 90, 255, 0.22)"
+            }
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "color"
+            ]
+          }
+        },
+        "patina.read.label": {
+          "type": "string",
+          "default": "Read",
+          "description": "Display label for the read category."
+        },
+        "patina.read.fadeColors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "markdownDescription": "Colors a `read` mark fades through as it ages, from just-read to fully faded. Stops are evenly spaced over `#patina.read.fadeDays#`.",
+          "default": [
+            "rgba(46, 160, 67, 0.24)",
+            "rgba(210, 180, 40, 0.20)",
+            "rgba(128, 128, 128, 0.12)"
+          ]
+        },
+        "patina.read.fadeDays": {
+          "type": "number",
+          "minimum": 0.01,
+          "default": 30,
+          "description": "Days for a read mark to fade from the first to the last fade color."
+        },
+        "patina.stale.color": {
+          "type": "string",
+          "default": "rgba(230, 60, 60, 0.28)",
+          "description": "Background color for stale marks (lines whose content changed outside the editor)."
+        },
+        "patina.showCursorLineAnnotation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a faint end-of-line annotation with mark info on the cursor line."
+        },
+        "patina.showInOverviewRuler": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show marks in the scrollbar overview ruler."
+        },
+        "patina.explorer.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show read coverage, freshness and stale flags in the file explorer."
+        },
+        "patina.storageFile": {
+          "type": "string",
+          "default": ".vscode/patina.json",
+          "description": "Where marks are stored, relative to each workspace folder."
+        }
+      }
+    },
+    "colors": [
+      {
+        "id": "patina.explorerFresh",
+        "description": "Explorer color for recently read files.",
+        "defaults": {
+          "dark": "#4fbf6a",
+          "light": "#2e8b45",
+          "highContrast": "#4fbf6a",
+          "highContrastLight": "#2e8b45"
+        }
+      },
+      {
+        "id": "patina.explorerAging",
+        "description": "Explorer color for files read a while ago.",
+        "defaults": {
+          "dark": "#c8b040",
+          "light": "#9a8420",
+          "highContrast": "#c8b040",
+          "highContrastLight": "#9a8420"
+        }
+      },
+      {
+        "id": "patina.explorerOld",
+        "description": "Explorer color for files whose read marks have fully faded.",
+        "defaults": {
+          "dark": "#8a8a8a",
+          "light": "#707070",
+          "highContrast": "#8a8a8a",
+          "highContrastLight": "#707070"
+        }
+      },
+      {
+        "id": "patina.explorerStale",
+        "description": "Explorer color for files with stale marks.",
+        "defaults": {
+          "dark": "#e05252",
+          "light": "#c62828",
+          "highContrast": "#e05252",
+          "highContrastLight": "#c62828"
+        }
+      },
+      {
+        "id": "patina.annotationForeground",
+        "description": "End-of-line annotation text color.",
+        "defaults": {
+          "dark": "#ffffff55",
+          "light": "#00000055",
+          "highContrast": "#ffffff99",
+          "highContrastLight": "#00000099"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "test": "tsc -p . && node --test out/test/*.test.js",
+    "package": "npm run compile && vsce package --allow-missing-repository --skip-license",
+    "test:integration": "tsc -p . && node out/integration/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "~1.90.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.6.0"
+  }
+}
