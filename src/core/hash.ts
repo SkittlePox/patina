@@ -1,11 +1,16 @@
-/** FNV-1a (32-bit) over UTF-16 code units, rendered base36. Fast, compact, good enough for line fingerprints. */
-export function hashLine(text: string): string {
+/** FNV-1a (32-bit) over UTF-16 code units, as an unsigned integer. */
+export function hashLineInt(text: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
     h = Math.imul(h, 0x01000193);
   }
-  return (h >>> 0).toString(36);
+  return h >>> 0;
+}
+
+/** Line fingerprint as stored in marks: FNV-1a (32-bit) rendered base36. */
+export function hashLine(text: string): string {
+  return hashLineInt(text).toString(36);
 }
 
 const NONE = '\u0001';

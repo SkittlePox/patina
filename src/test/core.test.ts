@@ -5,7 +5,7 @@ import { deserialize, serialize } from '../core/serialize';
 import { interpolateStops, parseColor } from '../core/color';
 import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
-import { changedSpans, isAtCursors } from '../core/typing';
+import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -403,4 +403,52 @@ test('typing: typed lines become read now (any category); tool edits keep dates'
   assert.ok(fm.get(4)!.stale);
   fm.markTyped(4, 4, T1 + 1, src(lines));
   assert.deepEqual([fm.get(4)!.stale, fm.get(4)!.t], [undefined, T1 + 1]);
+});
+
+test('shadow: only lines whose content changed count as typed', () => {
+  const run = (lines: string[], sL: number, sC: number, eL: number, eC: number, text: string) => {
+    const shadow = new DocShadow(src(lines));
+    const e = edit(lines, sL, sC, eL, eC, text);
+    return shadow.apply([e.change], src(e.lines));
+  };
+  const lines = ['a', 'block 1', 'block 2', 'block 3', 'z', '', 'q'];
+  assert.deepEqual(run(lines, 0, 1, 3, 7, ''), []); // delete a block from the end of the line above
+  assert.deepEqual(run(lines, 1, 0, 4, 0, ''), []); // delete whole lines
+  assert.deepEqual(run(lines, 4, 1, 5, 0, ''), []); // backspace away an empty line
+  assert.deepEqual(run(lines, 3, 7, 4, 0, ''), [3]); // join two non-empty lines
+  assert.deepEqual(run(lines, 1, 2, 1, 2, 'x'), [1]); // type a character
+  assert.deepEqual(run(lines, 0, 1, 0, 1, '\n'), [1]); // Enter at end of line: the new line
+  assert.deepEqual(run(lines, 1, 3, 1, 3, 'p\nq\nr'), [1, 2, 3]); // multi-line paste mid-line
+  assert.deepEqual(run(lines, 0, 0, 0, 0, 'new\n'), [0]); // insert a line above
+});
+
+test('shadow: stays in sync over many random edits', () => {
+  let seed = 7;
+  const rnd = (n: number) => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed % n;
+  };
+  let lines = Array.from({ length: 50 }, (_, i) => (i % 4 === 0 ? '' : `l${i}`));
+  const shadow = new DocShadow(src(lines));
+  for (let k = 0; k < 2000; k++) {
+    const sL = rnd(lines.length);
+    const eL = Math.min(lines.length - 1, sL + rnd(3));
+    const sC = rnd(lines[sL].length + 1);
+    const eC = eL === sL ? sC + rnd(lines[sL].length - sC + 1) : rnd(lines[eL].length + 1);
+    const text = ['', 'x', '\n', 'y\nz', '\n\n', `k${k}`][rnd(6)];
+    const e = edit(lines, sL, sC, eL, eC, text);
+    const got = shadow.apply([e.change], src(e.lines));
+    // Brute force: prefix/suffix comparison of the real old and new text of the region.
+    const old = lines.slice(sL, eL + 1);
+    const fresh = e.lines.slice(sL, sL + e.change.insertedLineBreaks + 1);
+    let p = 0;
+    while (p < old.length && p < fresh.length && old[p] === fresh[p]) p++;
+    let s = 0;
+    while (s < old.length - p && s < fresh.length - p && old[old.length - 1 - s] === fresh[fresh.length - 1 - s]) s++;
+    const want: number[] = [];
+    for (let j = p; j < fresh.length - s; j++) want.push(sL + j);
+    assert.deepEqual(got, want, `edit ${k}`);
+    lines = e.lines;
+    assert.equal(shadow.lineCount, lines.length);
+  }
 });

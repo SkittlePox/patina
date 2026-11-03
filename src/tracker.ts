@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { EditChange, LineMark, LineSource, linesFromText } from './core/marks';
-import { changedSpans, isAtCursors } from './core/typing';
+import { changedSpans, DocShadow, isAtCursors } from './core/typing';
 import { MarkStore } from './store';
 
 const DISK_DEBOUNCE_MS = 300;
@@ -52,6 +52,11 @@ export class ChangeTracker implements vscode.Disposable {
   private readonly statsTimers = new Map<string, NodeJS.Timeout>();
   /** Documents with an unresolved clean-looking change: marks as they were before it, and the decision timer. */
   private readonly ambiguous = new Map<string, { before: (LineMark | undefined)[]; timer: NodeJS.Timeout }>();
+  /**
+   * Per-line fingerprints of the active editor's document only (typed edits can only happen there), used to
+   * tell which typed lines actually changed. Rebuilt when the active editor changes.
+   */
+  private shadow: { doc: vscode.TextDocument; lines: DocShadow } | undefined;
 
   constructor(
     private readonly store: MarkStore,
@@ -65,10 +70,18 @@ export class ChangeTracker implements vscode.Disposable {
       watcher.onDidChange((u) => this.onDiskEvent(u)),
       watcher.onDidCreate((u) => this.onDiskEvent(u)),
       vscode.workspace.onDidChangeTextDocument((e) => this.onDocumentChange(e)),
+      vscode.window.onDidChangeActiveTextEditor((ed) => this.trackActive(ed)),
       vscode.workspace.onDidOpenTextDocument((d) => this.validateDocument(d, 'opened')),
       vscode.workspace.onDidRenameFiles((e) => e.files.forEach((f) => this.store.rename(f.oldUri, f.newUri))),
       vscode.workspace.onDidDeleteFiles((e) => this.store.removeUnder([...e.files])),
     );
+    this.trackActive(vscode.window.activeTextEditor);
+  }
+
+  private trackActive(editor: vscode.TextEditor | undefined): void {
+    const doc = editor?.document;
+    if (!doc || doc.uri.scheme !== 'file') this.shadow = undefined;
+    else if (this.shadow?.doc !== doc) this.shadow = { doc, lines: new DocShadow(docSource(doc)) };
   }
 
   dispose(): void {
@@ -92,6 +105,9 @@ export class ChangeTracker implements vscode.Disposable {
       endLine: c.range.end.line,
       insertedLineBreaks: countLineBreaks(c.text),
     }));
+    const src = docSource(doc);
+    // Keep the active document's line fingerprints in sync with every edit, whoever made it.
+    const changedLines = this.shadow?.doc === doc ? this.shadow.lines.apply(changes, src) : undefined;
     const editor = vscode.window.activeTextEditor;
     const typed =
       !undoRedo &&
@@ -112,11 +128,13 @@ export class ChangeTracker implements vscode.Disposable {
       const timer = setTimeout(() => this.resolveAmbiguous(key, doc.isDirty), AMBIGUOUS_CHANGE_MS);
       this.ambiguous.set(key, { before, timer });
     }
-    const src = docSource(doc);
     marks.applyUserEdits(changes, src);
     if (typed) {
+      // Only lines whose content is new or different: deleting a line break or a block of lines doesn't
+      // re-date the unchanged line it merges into.
       const now = Date.now();
-      for (const span of changedSpans(changes)) marks.markTyped(span.start, span.end, now, src);
+      if (changedLines) for (const line of changedLines) marks.markTyped(line, line, now, src);
+      else for (const span of changedSpans(changes)) marks.markTyped(span.start, span.end, now, src);
     }
     this.store.changed([doc.uri]);
     this.scheduleStats(doc);
