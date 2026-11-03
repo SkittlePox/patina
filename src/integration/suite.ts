@@ -46,6 +46,16 @@ export async function run(): Promise<void> {
     assert.deepEqual(stale(), []);
   });
 
+  await step('first keystroke after a save stays fresh', async () => {
+    assert.ok(!doc.isDirty);
+    await editor.edit((eb) => eb.insert(new vscode.Position(7, 0), '#'));
+    await sleep(1500); // past the ambiguity window
+    assert.deepEqual(stale(), []);
+    await doc.save();
+    await sleep(800);
+    assert.deepEqual(stale(), []);
+  });
+
   await step('inserting lines above in the editor moves the mark', async () => {
     await editor.edit((eb) => eb.insert(new vscode.Position(0, 0), 'a\nb\n'));
     await doc.save();
