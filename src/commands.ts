@@ -73,7 +73,11 @@ function editorMarks(store: MarkStore, editor: vscode.TextEditor | undefined, cr
   const uri = editor.document.uri;
   const marks = create ? store.getOrCreate(uri) : store.get(uri);
   if (!marks && create) {
-    void vscode.window.showWarningMessage('Patina only tracks files saved inside an open workspace folder.');
+    void vscode.window.showWarningMessage(
+      store.isExcluded(uri)
+        ? 'Patina: this file is excluded by the "patina.exclude" setting.'
+        : 'Patina only tracks files saved inside an open workspace folder.',
+    );
   }
   return marks;
 }
@@ -138,7 +142,7 @@ async function expandTargets(store: MarkStore, targets: vscode.Uri[]): Promise<v
       out.set(t.toString(), t);
     }
   }
-  return [...out.values()].filter((u) => !store.isStorageFile(u));
+  return [...out.values()].filter((u) => !store.isStorageFile(u) && !store.isExcluded(u));
 }
 
 async function readSource(uri: vscode.Uri): Promise<LineSource | undefined> {

@@ -6,6 +6,7 @@ import { interpolateStops, parseColor } from '../core/color';
 import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
+import { compileExcludes, globToRegExp } from '../core/glob';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -456,4 +457,21 @@ test('shadow: stays in sync over many random edits', () => {
     lines = e.lines;
     assert.equal(shadow.lineCount, lines.length);
   }
+});
+
+test('exclude globs', () => {
+  const ex = compileExcludes(['logs', '**/*.log', 'tmp/debug/', 'out/**', '**/__pycache__', 'gen/{a,b}', 'data/run[0-9]*', '  ', '']);
+  assert.ok(ex('logs'));
+  assert.ok(ex('logs/today/run.txt')); // inside an excluded folder
+  assert.ok(!ex('src/logs/x.txt')); // bare names are relative to the workspace root (use **/logs for any depth)
+  assert.ok(ex('trace.log') && ex('a/b/trace.log'));
+  assert.ok(!ex('trace.log.txt'));
+  assert.ok(ex('tmp/debug/x.py') && !ex('tmp/debugger/x.py'));
+  assert.ok(ex('out/a/b.js') && !ex('outer/a.js'));
+  assert.ok(ex('pkg/__pycache__/m.pyc'));
+  assert.ok(ex('gen/a/x') && ex('gen/b') && !ex('gen/c/x'));
+  assert.ok(ex('data/run3.csv') && !ex('data/runx.csv'));
+  assert.ok(!ex('src/main.ts'));
+  assert.ok(!compileExcludes([])('anything'));
+  assert.ok(globToRegExp('./a.b/*.ts').test('a.b/x.ts') && !globToRegExp('a.b/*.ts').test('axb/x.ts'));
 });

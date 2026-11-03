@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { LineMark, READ } from './core/marks';
+import { compileExcludes } from './core/glob';
 import { DEFAULT_PALETTE, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
 
@@ -23,6 +24,8 @@ export interface PatinaConfig {
   highlightStyle: HighlightStyle;
   explorerEnabled: boolean;
   storageFile: string;
+  /** Whether a workspace-relative path is excluded by `patina.exclude`. */
+  isExcluded: (relPath: string) => boolean;
 }
 
 const FALLBACK_COLOR = 'rgba(128, 128, 128, 0.15)';
@@ -54,6 +57,7 @@ export function readConfig(): PatinaConfig {
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
     storageFile: c.get<string>('storageFile') || '.vscode/patina.json',
+    isExcluded: compileExcludes(c.get<string[]>('exclude') ?? []),
   };
 }
 

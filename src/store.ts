@@ -87,30 +87,44 @@ export class MarkStore implements vscode.Disposable {
     return false;
   }
 
+  /** Marks for a file. Files excluded by `patina.exclude` have none as far as the rest of Patina is concerned. */
   get(uri: vscode.Uri): FileMarks | undefined {
-    return this.entries.get(uri.toString())?.marks;
+    return this.visible(uri)?.marks;
   }
 
-  /** Marks for a file, created on demand. Undefined if the file isn't inside a workspace folder. */
+  /** Whether a file is inside a workspace folder but excluded by `patina.exclude`. */
+  isExcluded(uri: vscode.Uri): boolean {
+    const folder = vscode.workspace.getWorkspaceFolder(uri);
+    const rel = folder && relativePath(folder.uri, uri);
+    return !!rel && this.getConfig().isExcluded(rel);
+  }
+
+  /** The entry for a file unless it's excluded. Excluded entries stay in storage, hidden, in case the pattern is removed. */
+  private visible(uri: vscode.Uri): Entry | undefined {
+    const e = this.entries.get(uri.toString());
+    return e && !this.getConfig().isExcluded(e.rel) ? e : undefined;
+  }
+
+  /** Marks for a file, created on demand. Undefined if the file isn't inside a workspace folder, or is excluded. */
   getOrCreate(uri: vscode.Uri): FileMarks | undefined {
     const existing = this.entries.get(uri.toString());
-    if (existing) return existing.marks;
+    if (existing) return this.getConfig().isExcluded(existing.rel) ? undefined : existing.marks;
     if (uri.scheme !== 'file') return undefined;
     const folder = vscode.workspace.getWorkspaceFolder(uri);
     if (!folder || !this.folders.has(folder.uri.toString())) return undefined;
     const rel = relativePath(folder.uri, uri);
-    if (!rel || this.isStorageFile(uri)) return undefined;
+    if (!rel || this.isStorageFile(uri) || this.getConfig().isExcluded(rel)) return undefined;
     const entry: Entry = { uri, folder, rel, marks: new FileMarks() };
     this.entries.set(uri.toString(), entry);
     return entry.marks;
   }
 
   files(): vscode.Uri[] {
-    return [...this.entries.values()].map((e) => e.uri);
+    return [...this.entries.values()].filter((e) => !this.getConfig().isExcluded(e.rel)).map((e) => e.uri);
   }
 
   stats(uri: vscode.Uri): FileStats | undefined {
-    return this.entries.get(uri.toString())?.stats;
+    return this.visible(uri)?.stats;
   }
 
   setStats(uri: vscode.Uri, stats: FileStats | undefined, fire = true): void {

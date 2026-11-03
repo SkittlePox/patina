@@ -86,11 +86,24 @@ If you set a background color but not its gutter version, the gutter uses a more
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
+| `patina.exclude` | `[]` | Glob patterns for files and folders never to track; see [What gets tracked](#what-gets-tracked) |
 | `patina.storageFile` | `.vscode/patina.json` | Relative to each workspace folder |
 
 The gutter bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
 Explorer colors are theme colors. You can override `patina.explorerFresh`, `patina.explorerAging`, `patina.explorerOld`, `patina.explorerStale` and `patina.annotationForeground` in `workbench.colorCustomizations`.
+
+## What gets tracked
+
+Patina tracks a file only once it has marks. A file gets marks when you mark lines or the whole file, when you type in it, or when you mark a folder that contains it. Opening and reading a file never creates marks. Neither does Claude, or anything else outside the editor, creating or rewriting a file. Those changes only affect marks that already exist.
+
+To keep generated files out entirely, list them in `patina.exclude` in your workspace's `.vscode/settings.json`:
+
+```jsonc
+"patina.exclude": ["logs", "**/*.log", "tmp/debug", "**/__pycache__"]
+```
+
+Patterns are relative to the workspace folder. `*` matches within one path segment, `**` matches across segments, and `{a,b}` and `[0-9]` also work. A pattern that matches a folder excludes everything inside it, and a bare name like `logs` matches only at the top level (use `**/logs` for any depth). Excluded files never get marks from typing, mark commands or folder marking. Marks they already have are hidden but kept, so they come back if you remove the pattern.
 
 ## How change detection works
 

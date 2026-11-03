@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "local",
   "private": true,
   "engines": {
@@ -288,6 +288,14 @@
           "type": "boolean",
           "default": true,
           "description": "Show read coverage, freshness and stale flags in the file explorer."
+        },
+        "patina.exclude": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Glob patterns, relative to the workspace folder, for files and folders Patina should never track, such as generated files and debug logs. A pattern that matches a folder excludes everything in it. Examples: `logs`, `**/*.log`, `tmp/debug`, `**/__pycache__`. Excluded files never get marks from typing, mark commands or folder marking. Marks they already have are hidden but kept. Set this in the workspace settings to make it project-wide."
         },
         "patina.storageFile": {
           "type": "string",

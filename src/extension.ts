@@ -43,10 +43,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (!e.affectsConfiguration('patina')) return;
       const storageChanged = e.affectsConfiguration('patina.storageFile');
+      const excludeChanged = e.affectsConfiguration('patina.exclude');
       cfg = readConfig();
       renderer.applyConfig(cfg);
       explorer.refreshAll();
       staleFolders.refreshAll();
+      // Files that just stopped being excluded may have changed while hidden.
+      if (excludeChanged) void tracker.validateAll('exclusions changed').then(() => renderer.renderAll());
       if (storageChanged) {
         void vscode.window.showInformationMessage('Patina: reload the window to use the new storage file location.');
       }
