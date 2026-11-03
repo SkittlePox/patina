@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { EditChange, LineMark, LineSource, linesFromText } from './core/marks';
+import { changedSpans, isAtCursors } from './core/typing';
 import { MarkStore } from './store';
 
 const DISK_DEBOUNCE_MS = 300;
@@ -29,14 +30,18 @@ function openDocument(uri: vscode.Uri): vscode.TextDocument | undefined {
 }
 
 /**
- * Decides whether a change was made by the user (marks follow silently) or arrived from elsewhere
- * (marks are validated against fingerprints and changed lines go stale).
+ * Decides whether a change was made inside the editor (marks follow) or arrived from elsewhere (marks are
+ * validated against fingerprints and changed lines go stale). Edits inside the editor are further split:
  *
- * - Change event on a document that is dirty afterwards, or an undo/redo: the user's own edit.
+ * - Typed: in the active editor, every change at a cursor/selection line. Touched lines become read, now.
+ * - Tool (rename, formatting, quick fixes, other documents, undo/redo): marks follow and keep their dates.
+ *
+ * Inside vs outside:
+ * - Change event on a document that is dirty afterwards, or an undo/redo: inside the editor.
  * - Change event that arrives with the document still clean: ambiguous. VS Code reloading the file from disk
  *   looks like this, but so does the user's first keystroke after opening or saving, because the dirty flag
  *   reaches the extension host in a separate notification just after the change. The edit is applied
- *   optimistically as the user's; if the document turns dirty within AMBIGUOUS_CHANGE_MS it was, and if it
+ *   optimistically as an in-editor edit; if the document turns dirty within AMBIGUOUS_CHANGE_MS it was, and if it
  *   stays clean the marks are rolled back and validated against the new content (foreign).
  * - File watcher event for a file that isn't open (or is open and clean): validate against disk → foreign.
  * - Document opened / extension activated: validate, so anything changed while unobserved is foreign.
@@ -81,9 +86,23 @@ export class ChangeTracker implements vscode.Disposable {
       if (doc.isDirty) this.resolveAmbiguous(key, true);
       return;
     }
-    const marks = this.store.get(doc.uri);
-    if (!marks) return;
     const undoRedo = e.reason === vscode.TextDocumentChangeReason.Undo || e.reason === vscode.TextDocumentChangeReason.Redo;
+    const changes: EditChange[] = e.contentChanges.map((c) => ({
+      startLine: c.range.start.line,
+      endLine: c.range.end.line,
+      insertedLineBreaks: countLineBreaks(c.text),
+    }));
+    const editor = vscode.window.activeTextEditor;
+    const typed =
+      !undoRedo &&
+      editor?.document === doc &&
+      isAtCursors(
+        changes,
+        editor.selections.map((s) => ({ start: s.start.line, end: s.end.line })),
+      );
+    // Typing in a file without marks starts tracking it; other edits only matter for files with marks.
+    const marks = typed ? this.store.getOrCreate(doc.uri) : this.store.get(doc.uri);
+    if (!marks) return;
     if (doc.isDirty || undoRedo) {
       this.resolveAmbiguous(key, true);
     } else {
@@ -93,12 +112,12 @@ export class ChangeTracker implements vscode.Disposable {
       const timer = setTimeout(() => this.resolveAmbiguous(key, doc.isDirty), AMBIGUOUS_CHANGE_MS);
       this.ambiguous.set(key, { before, timer });
     }
-    const changes: EditChange[] = e.contentChanges.map((c) => ({
-      startLine: c.range.start.line,
-      endLine: c.range.end.line,
-      insertedLineBreaks: countLineBreaks(c.text),
-    }));
-    marks.applyUserEdits(changes, docSource(doc));
+    const src = docSource(doc);
+    marks.applyUserEdits(changes, src);
+    if (typed) {
+      const now = Date.now();
+      for (const span of changedSpans(changes)) marks.markTyped(span.start, span.end, now, src);
+    }
     this.store.changed([doc.uri]);
     this.scheduleStats(doc);
   }

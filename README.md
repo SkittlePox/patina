@@ -96,7 +96,10 @@ Explorer colors are theme colors. You can override `patina.explorerFresh`, `pati
 
 Each marked line stores a fingerprint of its own text and a fingerprint of the lines around it.
 
-- **Your edits.** If a change event leaves the document dirty, or it is an undo/redo, the edit is yours. Marks follow their lines and are silently re-fingerprinted, so they stay fresh. Pressing Enter inside a marked block extends the block; pressing it at the block's edge doesn't.
+- **Edits inside the editor** are split into two kinds:
+  - **Typed by you.** These are in the active editor, and every change is on a line with a cursor or selection: typing, paste, delete, autocomplete, multi-cursor. Every line you touch becomes **read, dated now**, including lines that weren't marked. Lines marked with another category (next, question, …) keep their mark.
+  - **Tool edits.** These are rename symbol, formatting (including format-on-save), quick fixes, Replace All, edits in files other than the active one, and undo/redo. Marks follow their lines and are re-fingerprinted, so they don't go stale. They keep their category and date.
+- **The first edit after you open or save a file** reaches the extension before the editor reports the file as dirty. Patina applies it as an in-editor edit and confirms it once the dirty notice arrives. If the file is still clean after a second, the change was a reload from disk, and Patina treats it as foreign.
 - **Foreign changes.** These are detected in two ways. A clean open document that VS Code reloads from disk fires a change event and stays clean. A file that isn't open (or is open and clean) gets a file-watcher event, and Patina validates it against the disk content.
 - **Validation** re-anchors marks by content. It first anchors lines whose content is unique, then matches repeated lines (`}`, blank lines) by position and context, in order. Marks that can't be found go stale at their old position. If a fully marked block is rewritten, the whole new block goes stale. If marked lines are deleted outright, the neighbouring mark goes stale and its hover says how many lines were removed.
 - **On activation and on file open**, every mark is validated, so changes made while the editor wasn't watching count as foreign.
@@ -104,8 +107,7 @@ Each marked line stores a fingerprint of its own text and a fingerprint of the l
 The invariant: a line changed by a foreign edit is never shown as freshly read.
 
 **Known fuzzy cases (v1):**
-- Format-on-save counts as yours.
-- Edits applied through the Claude Code or Cursor in-editor diff views probably count as yours too, because they modify the buffer.
+- Typed vs tool is decided by where the edit lands. A tool edit that only touches the cursor's line, such as a formatter fixing just that line, counts as typed. Edits applied through the Claude Code or Cursor diff views count as tool edits (dates kept, not stale), not as foreign changes.
 - If you edit a file and then close it **without saving**, your typed changes look foreign on the next open, so those lines go stale.
 - Files that are closed are checked by decoding their bytes as UTF-8. A file in another encoding with non-ASCII characters may show false stale lines.
 - `git mv` or renames made outside the editor lose the marks for the old path. Renames inside the editor are followed.

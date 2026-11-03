@@ -46,6 +46,24 @@ export async function run(): Promise<void> {
     assert.deepEqual(stale(), []);
   });
 
+  await step('typed edit marks the line read now; tool edit keeps the date', async () => {
+    const markedAt = (l: number) => api.store.get(file)?.get(l)?.t;
+    const before = markedAt(8)!;
+    await sleep(20);
+    editor.selection = new vscode.Selection(8, 0, 8, 0);
+    await editor.edit((eb) => eb.insert(new vscode.Position(8, 0), 'T'));
+    assert.ok(markedAt(8)! > before, 'typed line should be re-dated');
+    const toolBefore = markedAt(5)!;
+    editor.selection = new vscode.Selection(0, 0, 0, 0);
+    const we = new vscode.WorkspaceEdit();
+    we.replace(file, new vscode.Range(5, 0, 5, 4), 'LINE');
+    await vscode.workspace.applyEdit(we);
+    assert.equal(markedAt(5), toolBefore, 'tool edit should keep the date');
+    await doc.save();
+    await sleep(800);
+    assert.deepEqual(stale(), []);
+  });
+
   await step('first keystroke after a save stays fresh', async () => {
     assert.ok(!doc.isDirty);
     await editor.edit((eb) => eb.insert(new vscode.Position(7, 0), '#'));

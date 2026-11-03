@@ -5,6 +5,7 @@ import { deserialize, serialize } from '../core/serialize';
 import { interpolateStops, parseColor } from '../core/color';
 import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
+import { changedSpans, isAtCursors } from '../core/typing';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -342,4 +343,64 @@ test('palettes: resolution and overrides', () => {
   assert.equal(o.gutter.categories.get('todo'), '#123456');
   assert.equal(o.background.categories.get('idea'), PALETTES.muted.background.extra[0]); // todo was fully custom
   assert.deepEqual(resolveColors('default', { readFade: [], stale: '  ', categories: [] }).background.stale, PALETTES.default.background.stale);
+});
+
+test('typing: edits at the cursors count as typed, edits elsewhere do not', () => {
+  const ch = (startLine: number, endLine = startLine, insertedLineBreaks = 0): EditChange => ({ startLine, endLine, insertedLineBreaks });
+  const cursor = (l: number, e = l) => ({ start: l, end: e });
+  assert.ok(isAtCursors([ch(5)], [cursor(5)])); // typing a character
+  assert.ok(isAtCursors([ch(5, 5, 1)], [cursor(6)])); // Enter, cursor already moved down
+  assert.ok(isAtCursors([ch(5, 5, 20)], [cursor(25)])); // multi-line paste, post-change cursor
+  assert.ok(isAtCursors([ch(4, 5)], [cursor(5)])); // backspace joining lines
+  assert.ok(isAtCursors([ch(9), ch(3)], [cursor(3), cursor(9)])); // multi-cursor
+  assert.ok(isAtCursors([ch(2, 8)], [cursor(2, 8)])); // replace a selection
+  assert.ok(!isAtCursors([ch(40), ch(12), ch(5)], [cursor(5)])); // rename: occurrences elsewhere
+  assert.ok(!isAtCursors([ch(0)], [cursor(30)])); // auto-import / formatter at the top
+  assert.ok(!isAtCursors([], [cursor(0)]));
+});
+
+test('typing: changed spans after sequential changes', () => {
+  const ch = (startLine: number, endLine: number, insertedLineBreaks: number): EditChange => ({ startLine, endLine, insertedLineBreaks });
+  assert.deepEqual(changedSpans([ch(5, 5, 0)]), [{ start: 5, end: 5 }]);
+  assert.deepEqual(changedSpans([ch(5, 5, 2)]), [{ start: 5, end: 7 }]);
+  // Bottom-up multi-cursor Enter: the earlier (lower) span shifts down when a later change inserts above it.
+  assert.deepEqual(changedSpans([ch(9, 9, 1), ch(3, 3, 1)]), [{ start: 3, end: 4 }, { start: 10, end: 11 }]);
+  // A later change overlapping an earlier span merges with it.
+  assert.deepEqual(changedSpans([ch(5, 5, 2), ch(6, 6, 0)]), [{ start: 5, end: 7 }]);
+  // Deleting lines below an earlier span leaves it in place.
+  assert.deepEqual(changedSpans([ch(2, 2, 0), ch(5, 8, 0)]), [{ start: 2, end: 2 }, { start: 5, end: 5 }]);
+});
+
+test('typing: typed lines become read now; tool edits keep dates; other categories untouched', () => {
+  let lines = file(10);
+  const fm = new FileMarks();
+  fm.mark(2, 4, READ, T0, src(lines));
+  fm.mark(6, 6, 'question', T0, src(lines));
+  // Typed edit on line 3 and on the question line, plus a newly typed line after line 8 (unmarked).
+  const e1 = edit(lines, 3, 0, 3, 0, 'x');
+  lines = e1.lines;
+  fm.applyUserEdits([e1.change], src(lines));
+  for (const s of changedSpans([e1.change])) fm.markTyped(s.start, s.end, T1, src(lines));
+  assert.equal(fm.get(2)!.t, T0);
+  assert.equal(fm.get(3)!.t, T1);
+  assert.equal(fm.get(4)!.t, T0);
+  const e2 = edit(lines, 8, lines[8].length, 8, lines[8].length, '\nnew line');
+  lines = e2.lines;
+  fm.applyUserEdits([e2.change], src(lines));
+  for (const s of changedSpans([e2.change])) fm.markTyped(s.start, s.end, T1, src(lines));
+  assert.deepEqual([fm.get(8)?.cat, fm.get(8)?.t, fm.get(9)?.cat], [READ, T1, READ]);
+  fm.markTyped(6, 6, T1, src(lines));
+  assert.deepEqual([fm.get(6)!.cat, fm.get(6)!.t], ['question', T0]);
+  // A tool edit (e.g. rename) on line 2: content follows, date stays, not stale.
+  const e3 = edit(lines, 2, 0, 2, 4, 'renamed');
+  lines = e3.lines;
+  fm.applyUserEdits([e3.change], src(lines));
+  assert.equal(fm.get(2)!.t, T0);
+  assert.equal(fm.validate(src(lines), T1).newlyStale, 0);
+  // Typing on a stale read line refreshes it.
+  lines[4] = 'external change';
+  fm.validate(src(lines), T1);
+  assert.ok(fm.get(4)!.stale);
+  fm.markTyped(4, 4, T1 + 1, src(lines));
+  assert.deepEqual([fm.get(4)!.stale, fm.get(4)!.t], [undefined, T1 + 1]);
 });

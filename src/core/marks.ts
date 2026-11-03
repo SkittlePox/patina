@@ -91,6 +91,19 @@ export class FileMarks {
     }
   }
 
+  /**
+   * Lines the user typed on become read, timestamped now. Unmarked, read and stale-read lines are (re)marked;
+   * lines carrying another category (next, question, …) are left alone.
+   */
+  markTyped(start: number, end: number, now: number, src: LineSource): void {
+    end = Math.min(end, src.lineCount - 1);
+    for (let i = Math.max(0, start); i <= end; i++) {
+      const m = this.lines[i];
+      if (m && m.cat !== READ) continue;
+      this.lines[i] = { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i) };
+    }
+  }
+
   clear(start: number, end: number): void {
     for (let i = Math.max(0, start); i <= end && i < this.lines.length; i++) this.lines[i] = undefined;
     this.trim();
@@ -125,8 +138,8 @@ export class FileMarks {
   }
 
   /**
-   * Apply edits made by the user in the editor. Marks follow their lines and are silently re-fingerprinted.
-   * `src` is the document after all changes were applied.
+   * Apply edits made inside the editor (typed or by a tool). Marks follow their lines and are silently
+   * re-fingerprinted, keeping their category and date. `src` is the document after all changes were applied.
    */
   applyUserEdits(changes: readonly EditChange[], src: LineSource): void {
     if (this.lines.length === 0) return;
