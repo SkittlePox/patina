@@ -12,6 +12,8 @@ interface StoredRun {
   x: string;
   st?: number;
   rm?: number;
+  /** Read by the user's own typing. */
+  ed?: 1;
 }
 
 export interface StoredFile {
@@ -47,6 +49,7 @@ export function deserialize(text: string): Map<string, FileMarks> {
         const m: LineMark = { cat: r.cat, t: r.t, h, c: xs[i] ?? '' };
         if (r.st !== undefined) m.stale = r.st;
         if (r.rm !== undefined) m.removed = r.rm;
+        if (r.ed) m.edited = true;
         fm.lines[r.l + i] = m;
       });
     }
@@ -72,6 +75,7 @@ function toRuns(fm: FileMarks): StoredRun[] {
       cur.run.cat === m.cat &&
       cur.run.t === m.t &&
       cur.run.st === m.stale &&
+      !!cur.run.ed === !!m.edited &&
       cur.run.rm === undefined &&
       m.removed === undefined;
     if (!continues) {
@@ -79,6 +83,7 @@ function toRuns(fm: FileMarks): StoredRun[] {
       const run: StoredRun = { l: line, cat: m.cat, t: m.t, h: '', x: '' };
       if (m.stale !== undefined) run.st = m.stale;
       if (m.removed !== undefined) run.rm = m.removed;
+      if (m.edited) run.ed = 1;
       cur = { run, hs: [], xs: [], next: line };
     }
     cur!.hs.push(m.h);

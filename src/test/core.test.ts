@@ -271,6 +271,8 @@ test('serialize round-trip', () => {
   const fm = new FileMarks();
   fm.mark(0, 9, READ, T0, src(lines));
   fm.mark(12, 14, 'next', T1, src(lines));
+  fm.markTyped(16, 17, T1, src(lines));
+  fm.markTyped(18, 18, T1 + 1, src(lines));
   lines[5] = 'changed';
   fm.validate(src(lines), T1);
   const text = serialize(new Map([['src/a.ts', fm], ['empty.ts', new FileMarks()]]));
@@ -390,7 +392,10 @@ test('typing: typed lines become read now (any category); tool edits keep dates'
   for (const s of changedSpans([e2.change])) fm.markTyped(s.start, s.end, T1, src(lines));
   assert.deepEqual([fm.get(8)?.cat, fm.get(8)?.t, fm.get(9)?.cat], [READ, T1, READ]);
   fm.markTyped(6, 6, T1, src(lines));
-  assert.deepEqual([fm.get(6)!.cat, fm.get(6)!.t], [READ, T1]);
+  assert.deepEqual([fm.get(6)!.cat, fm.get(6)!.t, fm.get(6)!.edited], [READ, T1, true]);
+  assert.equal(fm.get(2)!.edited, undefined); // marked explicitly, untouched by typing
+  fm.mark(6, 6, READ, T1, src(lines));
+  assert.equal(fm.get(6)!.edited, undefined); // marking explicitly makes it plain "read" again
   // A tool edit (e.g. rename) on line 2: content follows, date stays, not stale.
   const e3 = edit(lines, 2, 0, 2, 4, 'renamed');
   lines = e3.lines;

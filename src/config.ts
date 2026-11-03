@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { READ } from './core/marks';
+import { LineMark, READ } from './core/marks';
 import { DEFAULT_PALETTE, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
 
@@ -55,6 +55,11 @@ export function readConfig(): PatinaConfig {
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
     storageFile: c.get<string>('storageFile') || '.vscode/patina.json',
   };
+}
+
+/** Label for a specific mark: read marks created by typing show as "Edited". */
+export function markLabel(cfg: PatinaConfig, m: LineMark): string {
+  return m.cat === READ && m.edited ? 'Edited' : categoryLabel(cfg, m.cat);
 }
 
 export function categoryLabel(cfg: PatinaConfig, cat: string): string {

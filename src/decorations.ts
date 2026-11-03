@@ -7,7 +7,7 @@ import { formatColor, interpolateStops, parseColor, RGBA, withMinAlpha } from '.
 import { LineMark, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
 import { shortAge } from './core/time';
-import { categoryLabel, FALLBACK_COLOR, PatinaConfig } from './config';
+import { FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
 
@@ -131,7 +131,7 @@ export class DecorationRenderer implements vscode.Disposable {
       return;
     }
     const now = Date.now();
-    let text = `${categoryLabel(this.cfg, m.cat)} · ${shortAge(now - m.t)} ago`;
+    let text = `${markLabel(this.cfg, m)} · ${shortAge(now - m.t)} ago`;
     if (m.stale !== undefined) text = `⚠ changed outside editor ${shortAge(now - m.stale)} ago · was ${text}`;
     const end = editor.document.lineAt(line).range.end;
     editor.setDecorations(this.annotationType, [

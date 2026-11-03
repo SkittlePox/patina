@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { READ } from './core/marks';
 import { formatTimestamp, relativeAge } from './core/time';
-import { categoryLabel, PatinaConfig } from './config';
+import { markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
 export class MarkHoverProvider implements vscode.HoverProvider {
@@ -17,7 +17,7 @@ export class MarkHoverProvider implements vscode.HoverProvider {
     const now = Date.now();
     const md = new vscode.MarkdownString(undefined, true);
     md.appendMarkdown('**Patina** · ');
-    md.appendText(categoryLabel(cfg, m.cat));
+    md.appendText(markLabel(cfg, m));
     if (m.cat === READ && m.stale === undefined) {
       const pct = Math.min(100, Math.round(((now - m.t) / cfg.fadeMs) * 100));
       md.appendMarkdown(` · ${pct}% faded`);

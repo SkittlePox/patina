@@ -15,6 +15,8 @@ export interface LineMark {
   stale?: number;
   /** Number of marked lines next to this one that were deleted by a foreign change. */
   removed?: number;
+  /** A read mark created by the user's own typing rather than by marking the line explicitly. */
+  edited?: boolean;
 }
 
 /** Read access to a document's lines. */
@@ -95,7 +97,7 @@ export class FileMarks {
   markTyped(start: number, end: number, now: number, src: LineSource): void {
     end = Math.min(end, src.lineCount - 1);
     for (let i = Math.max(0, start); i <= end; i++) {
-      this.lines[i] = { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i) };
+      this.lines[i] = { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i), edited: true };
     }
   }
 
