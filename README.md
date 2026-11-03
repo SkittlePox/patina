@@ -107,7 +107,8 @@ Each marked line stores a fingerprint of its own text and a fingerprint of the l
 The invariant: a line changed by a foreign edit is never shown as freshly read.
 
 **Known fuzzy cases (v1):**
-- Typed vs tool is decided by where the edit lands. A tool edit that only touches the cursor's line, such as a formatter fixing just that line, counts as typed. Edits applied through the Claude Code or Cursor diff views count as tool edits (dates kept, not stale), not as foreign changes.
+- Typed vs tool is decided by where the edit lands. A tool edit that only touches the cursor's line, such as a formatter fixing just that line, counts as typed. Claude Code edits go stale, whether Claude runs in a terminal or through the Claude Code extension. In both cases Claude Code writes the file to disk, which counts as a change from outside the editor. (In the extension, the proposed change sits in a temporary diff document until you accept it.) Edits that are applied directly to the editor's in-memory copy of the file, as Cursor's own AI features may do, count as tool edits: dates kept, not stale.
+- If Claude writes a file while you have unsaved edits to it, the editor keeps your version and doesn't reload. Patina sees Claude's change only if you then take the version on disk.
 - If you edit a file and then close it **without saving**, your typed changes look foreign on the next open, so those lines go stale.
 - Files that are closed are checked by decoding their bytes as UTF-8. A file in another encoding with non-ASCII characters may show false stale lines.
 - `git mv` or renames made outside the editor lose the marks for the old path. Renames inside the editor are followed.
