@@ -4,6 +4,10 @@
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
   "version": "0.7.0",
   "publisher": "local",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SkittlePox/patina.git"
+  },
   "private": true,
   "engines": {
     "vscode": "^1.90.0"
@@ -34,7 +38,7 @@
       },
       {
         "command": "patina.mark",
-        "title": "Mark Lines As…",
+        "title": "Mark Lines As\u2026",
         "category": "Patina"
       },
       {
@@ -49,7 +53,7 @@
       },
       {
         "command": "patina.markFileAs",
-        "title": "Mark Whole File(s) As…",
+        "title": "Mark Whole File(s) As\u2026",
         "category": "Patina"
       },
       {
@@ -188,17 +192,17 @@
             "colorblind"
           ],
           "enumDescriptions": [
-            "Green → yellow → gray for read, red for stale, blue/purple categories.",
+            "Green \u2192 yellow \u2192 gray for read, red for stale, blue/purple categories.",
             "Soft, low-contrast tones that stay out of the way.",
             "Saturated, high-contrast colors.",
-            "Okabe–Ito colors: blue → sky → gray for read, vermillion for stale; no red/green distinctions."
+            "Okabe\u2013Ito colors: blue \u2192 sky \u2192 gray for read, vermillion for stale; no red/green distinctions."
           ],
           "default": "default",
           "markdownDescription": "Built-in color palette. Each palette has translucent background colors and stronger gutter-bar colors. Any color setting you set yourself (`#patina.read.fadeColors#`, `#patina.stale.color#`, category `color`/`gutterColor`, and their gutter versions) overrides the palette."
         },
         "patina.categories": {
           "type": "object",
-          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has an optional `label`, and optional `color` (background) and `gutterColor` (gutter bar) — any CSS color, e.g. `rgba(255, 150, 0, 0.22)`. Without colors, a category uses the palette's color (custom categories get the palette's extra colors in order). If only `color` is set, the gutter uses a more opaque version of it. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
+          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has an optional `label`, and optional `color` (background) and `gutterColor` (gutter bar) \u2014 any CSS color, e.g. `rgba(255, 150, 0, 0.22)`. Without colors, a category uses the palette's color (custom categories get the palette's extra colors in order). If only `color` is set, the gutter uses a more opaque version of it. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
           "default": {
             "next": {
               "label": "Attend to next"

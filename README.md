@@ -1,153 +1,84 @@
 # Patina
 
-A VS Code / Cursor extension for reading a whole codebase thoroughly. It tracks which lines you've read and when, and whether they've changed since.
+Patina is an extension for VS Code and Cursor. It highlights the code you've read and shows you what has changed since.
 
-- **Mark lines** with a category: `read`, `next` ("attend to next"), `question`, or your own. Each mark is a whole-line background.
-- **Read marks fade** from green to yellow to gray over `patina.read.fadeDays` (default 30).
-- **Stale marks turn red.** A mark goes stale when its line changes through something other than you typing in the editor: Claude Code in a terminal, `git checkout`, `sed -i`, or any other process.
-- **Hover** a marked line to see its category, when it was marked, and its age. If it's stale, the hover also says when the change was detected.
-- **Explorer badges** show read coverage (`42` means 42%, `✓` means fully read). The badge color shows freshness, and `!` flags stale lines. Stale files also tint their parent folders.
+> **Media to make: `docs/media/reading.gif`** (GIF, about 8 s)
+> Open a real source file in a project you know. Turn on `patina.showCursorLineAnnotation`.
+> 1. Select a function and press `ctrl+alt+r`. It turns green.
+> 2. Select the next block and mark it too.
+> 3. Hover a marked line to show the "Read · Marked … (just now)" tooltip.
+> 4. Scroll down slowly so the green marks are visible in the scrollbar.
+>
+> Keep the cursor movements slow and deliberate.
 
-## Using it
+Select some lines and press `ctrl+alt+r`. They turn green and fade to gray over the following weeks. Hover a line to see when you read it.
 
-| Action | Default key | Command |
-| --- | --- | --- |
-| Mark selected lines as read | `ctrl+alt+r` | `Patina: Mark Lines as Read` |
-| Mark as attend-to-next | `ctrl+alt+n` | `Patina: Mark Lines as Attend To Next` |
-| Mark as question | `ctrl+alt+q` | `Patina: Mark Lines as Question` |
-| Mark as any category (picker) | — | `Patina: Mark Lines As…` |
-| Clear marks on selected lines | `ctrl+alt+u` | `Patina: Clear Marks on Lines` |
-| Mark whole file(s)/folder(s) | explorer menu → Patina | `Patina: Mark Whole File(s) as Read` / `…As…` |
-| Clear file(s)/folder(s) | explorer menu → Patina | `Patina: Clear All Marks in File(s)` |
-| Re-check everything | — | `Patina: Re-check All Marks Against Current File Contents` |
+If a line you've read changes outside your editor, it turns red until you read it again. That covers an agent's edit, a `git pull` or a script. Lines you write yourself are marked as you type.
 
-Each line holds one mark, so marking a line again replaces its mark. Re-marking also clears stale state; that's how you acknowledge a change once you've reread it.
+## Working alongside an agent
 
-When you mark a folder, Patina skips anything excluded by `files.exclude` or `search.exclude`, as well as binary files and files over 5 MB.
+> **Media to make: `docs/media/agent-edit.gif`** (GIF, about 12 s)
+> Split the screen: the editor on the left with a fully read (green) function, and Claude Code in a terminal on the right.
+> 1. Ask Claude to change something small inside that function, and accept the edit.
+> 2. About a second later, only the changed lines turn red.
+> 3. Hover a red line to show "Stale: this line changed outside the editor."
+> 4. Read it, select it and press `ctrl+alt+r`. It's green again.
+>
+> Optional ending: rename a symbol with `F2` inside a green block. The block stays green.
 
-### Custom categories and keybindings
+Claude Code or any other tool can work in the files you're reading. Whatever it changes shows up in red, line by line. Renames and formatting don't.
 
-```jsonc
-// settings.json
-"patina.categories": {
-  "next":     { "label": "Attend to next" },
-  "question": { "label": "Question" },
-  "todo":     { "label": "Todo" }
-}
-```
+You can exclude logs, build output and other generated files so they're never tracked.
 
-```jsonc
-// keybindings.json
-{ "key": "ctrl+alt+t", "command": "patina.mark", "args": { "category": "todo" }, "when": "editorTextFocus" }
-```
+## At a glance
 
-Categories without colors take them from the palette. Custom categories get the palette's extra colors in order.
+> **Media to make: `docs/media/explorer.png`** (screenshot)
+> The file explorer, plus a sliver of the editor. Include:
+> - a few files marked `✓` (fully read)
+> - a couple of files showing a percentage (`35`, `80`)
+> - one file with `!` (changed) and its parent folder tinted red
+>
+> Use a project with a recognizable folder structure.
+
+The explorer shows how much of each file you've read and flags the ones that changed.
+
+> **Media to make: `docs/media/fade.png`** (screenshot)
+> One file with blocks read at different times: fresh green, then yellow, then gray.
+> To stage it, temporarily set `"patina.read.fadeDays": 0.005` (about 7 minutes), mark a block every couple of minutes, take the screenshot, then remove the setting.
+
+## Other marks
+
+Press `ctrl+alt+n` to mark lines to come back to, and `ctrl+alt+q` for a question. You can add your own categories, each with a color and a key.
 
 ## Colors
 
-Pick a built-in palette with `patina.palette`:
+> **Media to make: `docs/media/palettes.png`** (screenshot, 2×2 grid)
+> The same 15–20 line snippet under each palette: `default`, `muted`, `vivid`, `colorblind`. Each copy should have read lines of a few ages, one red (stale) line, and one `next` and one `question` line. Label each quadrant.
 
-| Palette | |
-| --- | --- |
-| `default` | Green → yellow → gray for read, red for stale, blue/purple categories |
-| `muted` | Soft, low-contrast tones |
-| `vivid` | Saturated, high-contrast colors |
-| `colorblind` | Okabe–Ito colors: blue → sky → gray for read, vermillion for stale, no red/green distinctions |
+There are four built-in palettes, including a colorblind-safe one, and you can set your own color for any mark. Patina can tint the whole line or draw a bar beside the line numbers.
 
-Each palette has two sets of colors: translucent ones for line backgrounds and stronger ones for gutter bars. To use your own colors, set any of the settings below; each one you set overrides the palette, and the rest still come from it. Colors can be any CSS color, such as `rgba(r, g, b, a)` or `#rrggbbaa`.
+> **Media to make: `docs/media/gutter.png`** (screenshot)
+> The same snippet side by side: `"patina.highlightStyle": "background"` on the left and `"gutter"` on the right.
 
-```jsonc
-// settings.json
-"patina.palette": "muted",
-"patina.read.fadeColors": ["rgba(46, 160, 67, 0.22)", "rgba(210, 180, 40, 0.18)", "rgba(128, 128, 128, 0.12)"],
-"patina.read.gutterFadeColors": ["rgba(46, 160, 67, 1)", "rgba(210, 180, 40, 0.8)", "rgba(128, 128, 128, 0.5)"],
-"patina.stale.color": "rgba(230, 60, 60, 0.28)",
-"patina.stale.gutterColor": "#e63c3c",
-"patina.categories": {
-  "next": { "label": "Attend to next", "color": "rgba(64, 140, 255, 0.22)", "gutterColor": "rgba(64, 140, 255, 0.9)" }
-}
-```
-
-If you set a background color but not its gutter version, the gutter uses a more opaque version of the background color.
-
-## Settings
-
-| Setting | Default | |
-| --- | --- | --- |
-| `patina.palette` | `default` | Built-in palette; see [Colors](#colors) |
-| `patina.highlightStyle` | `background` | `background`: tint the line. `gutter`: colored bar just left of the line numbers. `gutterAndBackground`: both |
-| `patina.categories` | `next`, `question` | Static categories: label, optional `color` and `gutterColor` |
-| `patina.read.label` | `Read` | |
-| `patina.read.fadeDays` | `30` | How long a read mark takes to fully fade |
-| `patina.read.fadeColors` | from palette | Background fade stops, evenly spaced over the fade duration |
-| `patina.read.gutterFadeColors` | from palette | Gutter fade stops |
-| `patina.stale.color` | from palette | Background for stale lines |
-| `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
-| `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
-| `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
-| `patina.explorer.enabled` | `true` | |
-| `patina.exclude` | `[]` | Glob patterns for files and folders never to track; see [What gets tracked](#what-gets-tracked) |
-| `patina.storageFile` | `.vscode/patina.json` | Relative to each workspace folder |
-
-The gutter bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
-
-Explorer colors are theme colors. You can override `patina.explorerFresh`, `patina.explorerAging`, `patina.explorerOld`, `patina.explorerStale` and `patina.annotationForeground` in `workbench.colorCustomizations`.
-
-## What gets tracked
-
-Patina tracks a file only once it has marks. A file gets marks when you mark lines or the whole file, when you type in it, or when you mark a folder that contains it. Opening and reading a file never creates marks. Neither does Claude, or anything else outside the editor, creating or rewriting a file. Those changes only affect marks that already exist.
-
-To keep generated files out entirely, list them in `patina.exclude` in your workspace's `.vscode/settings.json`:
-
-```jsonc
-"patina.exclude": ["logs", "**/*.log", "tmp/debug", "**/__pycache__"]
-```
-
-Patterns are relative to the workspace folder. `*` matches within one path segment, `**` matches across segments, and `{a,b}` and `[0-9]` also work. A pattern that matches a folder excludes everything inside it, and a bare name like `logs` matches only at the top level (use `**/logs` for any depth). Excluded files never get marks from typing, mark commands or folder marking. Marks they already have are hidden but kept, so they come back if you remove the pattern.
-
-## How change detection works
-
-Each marked line stores a fingerprint of its own text and a fingerprint of the lines around it.
-
-- **Edits inside the editor** are split into two kinds:
-  - **Typed by you.** These are in the active editor, and every change is on a line with a cursor or selection: typing, paste, delete, autocomplete, multi-cursor. Every line whose text you change, or that you add, becomes **read, dated now**, whatever it was before: unmarked, next, question, or stale. These lines show as **Edited** in the hover and the end-of-line note, instead of **Read**; marking a line explicitly turns it back into Read. Lines whose text stays the same keep their marks. For example, deleting a block or a line break doesn't re-date the line above it. To tell which lines changed, Patina keeps a 4-byte fingerprint per line of the active file only.
-  - **Tool edits.** These are rename symbol, formatting (including format-on-save), quick fixes, Replace All, edits in files other than the active one, and undo/redo. Marks follow their lines and are re-fingerprinted, so they don't go stale. They keep their category and date.
-- **The first edit after you open or save a file** reaches the extension before the editor reports the file as dirty. Patina applies it as an in-editor edit and confirms it once the dirty notice arrives. If the file is still clean after a second, the change was a reload from disk, and Patina treats it as foreign.
-- **Foreign changes.** These are detected in two ways. A clean open document that VS Code reloads from disk fires a change event and stays clean. A file that isn't open (or is open and clean) gets a file-watcher event, and Patina validates it against the disk content.
-- **Validation** re-anchors marks by content. It first anchors lines whose content is unique, then matches repeated lines (`}`, blank lines) by position and context, in order. Marks that can't be found go stale at their old position. If a fully marked block is rewritten, the whole new block goes stale. If marked lines are deleted outright, the neighbouring mark goes stale and its hover says how many lines were removed.
-- **On activation and on file open**, every mark is validated, so changes made while the editor wasn't watching count as foreign.
-
-The invariant: a line changed by a foreign edit is never shown as freshly read.
-
-**Known fuzzy cases (v1):**
-- Typed vs tool is decided by where the edit lands. A tool edit that only touches the cursor's line, such as a formatter fixing just that line, counts as typed. Claude Code edits go stale, whether Claude runs in a terminal or through the Claude Code extension. In both cases Claude Code writes the file to disk, which counts as a change from outside the editor. (In the extension, the proposed change sits in a temporary diff document until you accept it.) Edits that are applied directly to the editor's in-memory copy of the file, as Cursor's own AI features may do, count as tool edits: dates kept, not stale.
-- If Claude writes a file while you have unsaved edits to it, the editor keeps your version and doesn't reload. Patina sees Claude's change only if you then take the version on disk.
-- If you edit a file and then close it **without saving**, your typed changes look foreign on the next open, so those lines go stale.
-- Files that are closed are checked by decoding their bytes as UTF-8. A file in another encoding with non-ASCII characters may show false stale lines.
-- `git mv` or renames made outside the editor lose the marks for the old path. Renames inside the editor are followed.
-
-## Storage
-
-Marks are saved as JSON in `.vscode/patina.json`, with one line per run of marks. The first time the file is created in a git repo, Patina offers to add it to `.git/info/exclude` (private) or to `.gitignore`.
-
-## Development
+## Install
 
 ```sh
-npm install
-npm test                  # unit tests for fingerprinting, re-anchoring, edit tracking, storage
-npm run test:integration  # spec scenarios in a real VS Code extension host (opens a window; uses VS Code.app, or set VSCODE_PATH)
-npm run package           # builds patina-<version>.vsix
+git clone https://github.com/SkittlePox/patina && cd patina
+npm install && npm run package
+cursor --install-extension patina-*.vsix    # or: code --install-extension …
 ```
 
-To run Patina, open this folder in Cursor and press **F5** to launch an Extension Development Host. To install it permanently, run `cursor --install-extension patina-0.1.0.vsix`.
+## Keys
 
-Manual scenarios from the spec, to check in the dev host:
+| | |
+| --- | --- |
+| `ctrl+alt+r` | Mark as read |
+| `ctrl+alt+n` | Mark to come back to |
+| `ctrl+alt+q` | Mark as a question |
+| `ctrl+alt+u` | Clear marks |
 
-1. Mark some lines, reload the window: the marks persist.
-2. Type inside a marked range: it stays fresh.
-3. `git checkout` a different version of the file: changed lines go stale.
-4. `sed -i '' 's/foo/bar/' file` from the terminal: the changed lines go stale.
-5. Insert lines above a mark: the mark moves with its line, whether you insert them in the editor or externally.
-6. Close the editor, change the file externally, reopen it: stale.
+To mark a whole file or folder, right-click it in the explorer and choose **Patina**.
 
-The Patina output channel logs every stale detection and its cause.
+Marks are saved in your project's `.vscode/patina.json`. They don't leave your machine unless you commit that file.
+
+Settings, commands and how change detection works are covered in [docs/REFERENCE.md](docs/REFERENCE.md).

@@ -10,3 +10,4 @@ patina-spec.md
 out/integration/**
 .test-workspace/**
 .gitignore
+docs/media/**
