@@ -91,15 +91,10 @@ export class FileMarks {
     }
   }
 
-  /**
-   * Lines the user typed on become read, timestamped now. Unmarked, read and stale-read lines are (re)marked;
-   * lines carrying another category (next, question, …) are left alone.
-   */
+  /** Lines the user typed on become read, timestamped now, whatever they were before (unmarked, any category, stale). */
   markTyped(start: number, end: number, now: number, src: LineSource): void {
     end = Math.min(end, src.lineCount - 1);
     for (let i = Math.max(0, start); i <= end; i++) {
-      const m = this.lines[i];
-      if (m && m.cat !== READ) continue;
       this.lines[i] = { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i) };
     }
   }

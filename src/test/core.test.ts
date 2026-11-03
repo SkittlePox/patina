@@ -371,7 +371,7 @@ test('typing: changed spans after sequential changes', () => {
   assert.deepEqual(changedSpans([ch(2, 2, 0), ch(5, 8, 0)]), [{ start: 2, end: 2 }, { start: 5, end: 5 }]);
 });
 
-test('typing: typed lines become read now; tool edits keep dates; other categories untouched', () => {
+test('typing: typed lines become read now (any category); tool edits keep dates', () => {
   let lines = file(10);
   const fm = new FileMarks();
   fm.mark(2, 4, READ, T0, src(lines));
@@ -390,7 +390,7 @@ test('typing: typed lines become read now; tool edits keep dates; other categori
   for (const s of changedSpans([e2.change])) fm.markTyped(s.start, s.end, T1, src(lines));
   assert.deepEqual([fm.get(8)?.cat, fm.get(8)?.t, fm.get(9)?.cat], [READ, T1, READ]);
   fm.markTyped(6, 6, T1, src(lines));
-  assert.deepEqual([fm.get(6)!.cat, fm.get(6)!.t], ['question', T0]);
+  assert.deepEqual([fm.get(6)!.cat, fm.get(6)!.t], [READ, T1]);
   // A tool edit (e.g. rename) on line 2: content follows, date stays, not stale.
   const e3 = edit(lines, 2, 0, 2, 4, 'renamed');
   lines = e3.lines;

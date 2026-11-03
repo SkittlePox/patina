@@ -97,7 +97,7 @@ Explorer colors are theme colors. You can override `patina.explorerFresh`, `pati
 Each marked line stores a fingerprint of its own text and a fingerprint of the lines around it.
 
 - **Edits inside the editor** are split into two kinds:
-  - **Typed by you.** These are in the active editor, and every change is on a line with a cursor or selection: typing, paste, delete, autocomplete, multi-cursor. Every line you touch becomes **read, dated now**, including lines that weren't marked. Lines marked with another category (next, question, …) keep their mark.
+  - **Typed by you.** These are in the active editor, and every change is on a line with a cursor or selection: typing, paste, delete, autocomplete, multi-cursor. Every line you touch becomes **read, dated now**, whatever it was before: unmarked, next, question, or stale.
   - **Tool edits.** These are rename symbol, formatting (including format-on-save), quick fixes, Replace All, edits in files other than the active one, and undo/redo. Marks follow their lines and are re-fingerprinted, so they don't go stale. They keep their category and date.
 - **The first edit after you open or save a file** reaches the extension before the editor reports the file as dirty. Patina applies it as an in-editor edit and confirms it once the dirty notice arrives. If the file is still clean after a second, the change was a reload from disk, and Patina treats it as foreign.
 - **Foreign changes.** These are detected in two ways. A clean open document that VS Code reloads from disk fires a change event and stays clean. A file that isn't open (or is open and clean) gets a file-watcher event, and Patina validates it against the disk content.
