@@ -30,9 +30,9 @@ When you mark a folder, Patina skips anything excluded by `files.exclude` or `se
 ```jsonc
 // settings.json
 "patina.categories": {
-  "next":     { "label": "Attend to next", "color": "rgba(64, 140, 255, 0.22)" },
-  "question": { "label": "Question",       "color": "rgba(180, 90, 255, 0.22)" },
-  "todo":     { "label": "Todo",           "color": "rgba(255, 150, 0, 0.22)" }
+  "next":     { "label": "Attend to next" },
+  "question": { "label": "Question" },
+  "todo":     { "label": "Todo" }
 }
 ```
 
@@ -41,19 +41,54 @@ When you mark a folder, Patina skips anything excluded by `files.exclude` or `se
 { "key": "ctrl+alt+t", "command": "patina.mark", "args": { "category": "todo" }, "when": "editorTextFocus" }
 ```
 
+Categories without colors take them from the palette. Custom categories get the palette's extra colors in order.
+
+## Colors
+
+Pick a built-in palette with `patina.palette`:
+
+| Palette | |
+| --- | --- |
+| `default` | Green → yellow → gray for read, red for stale, blue/purple categories |
+| `muted` | Soft, low-contrast tones |
+| `vivid` | Saturated, high-contrast colors |
+| `colorblind` | Okabe–Ito colors: blue → sky → gray for read, vermillion for stale, no red/green distinctions |
+
+Each palette has two sets of colors: translucent ones for line backgrounds and stronger ones for gutter bars. To use your own colors, set any of the settings below; each one you set overrides the palette, and the rest still come from it. Colors can be any CSS color, such as `rgba(r, g, b, a)` or `#rrggbbaa`.
+
+```jsonc
+// settings.json
+"patina.palette": "muted",
+"patina.read.fadeColors": ["rgba(46, 160, 67, 0.22)", "rgba(210, 180, 40, 0.18)", "rgba(128, 128, 128, 0.12)"],
+"patina.read.gutterFadeColors": ["rgba(46, 160, 67, 1)", "rgba(210, 180, 40, 0.8)", "rgba(128, 128, 128, 0.5)"],
+"patina.stale.color": "rgba(230, 60, 60, 0.28)",
+"patina.stale.gutterColor": "#e63c3c",
+"patina.categories": {
+  "next": { "label": "Attend to next", "color": "rgba(64, 140, 255, 0.22)", "gutterColor": "rgba(64, 140, 255, 0.9)" }
+}
+```
+
+If you set a background color but not its gutter version, the gutter uses a more opaque version of the background color.
+
 ## Settings
 
 | Setting | Default | |
 | --- | --- | --- |
-| `patina.categories` | `next`, `question` | Static categories: color and label |
+| `patina.palette` | `default` | Built-in palette; see [Colors](#colors) |
+| `patina.highlightStyle` | `background` | `background`: tint the line. `gutter`: colored bar just left of the line numbers. `gutterAndBackground`: both |
+| `patina.categories` | `next`, `question` | Static categories: label, optional `color` and `gutterColor` |
 | `patina.read.label` | `Read` | |
-| `patina.read.fadeColors` | green → yellow → gray | Fade stops, evenly spaced over the fade duration |
-| `patina.read.fadeDays` | `30` | |
-| `patina.stale.color` | red | |
+| `patina.read.fadeDays` | `30` | How long a read mark takes to fully fade |
+| `patina.read.fadeColors` | from palette | Background fade stops, evenly spaced over the fade duration |
+| `patina.read.gutterFadeColors` | from palette | Gutter fade stops |
+| `patina.stale.color` | from palette | Background for stale lines |
+| `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
 | `patina.storageFile` | `.vscode/patina.json` | Relative to each workspace folder |
+
+The gutter bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
 Explorer colors are theme colors. You can override `patina.explorerFresh`, `patina.explorerAging`, `patina.explorerOld`, `patina.explorerStale` and `patina.annotationForeground` in `workbench.colorCustomizations`.
 

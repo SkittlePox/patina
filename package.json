@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.1.0",
+  "version": "0.4.1",
   "publisher": "local",
   "private": true,
   "engines": {
@@ -34,7 +34,7 @@
       },
       {
         "command": "patina.mark",
-        "title": "Mark Lines As\u2026",
+        "title": "Mark Lines As…",
         "category": "Patina"
       },
       {
@@ -49,7 +49,7 @@
       },
       {
         "command": "patina.markFileAs",
-        "title": "Mark Whole File(s) As\u2026",
+        "title": "Mark Whole File(s) As…",
         "category": "Patina"
       },
       {
@@ -179,17 +179,32 @@
     "configuration": {
       "title": "Patina",
       "properties": {
+        "patina.palette": {
+          "type": "string",
+          "enum": [
+            "default",
+            "muted",
+            "vivid",
+            "colorblind"
+          ],
+          "enumDescriptions": [
+            "Green → yellow → gray for read, red for stale, blue/purple categories.",
+            "Soft, low-contrast tones that stay out of the way.",
+            "Saturated, high-contrast colors.",
+            "Okabe–Ito colors: blue → sky → gray for read, vermillion for stale; no red/green distinctions."
+          ],
+          "default": "default",
+          "markdownDescription": "Built-in color palette. Each palette has translucent background colors and stronger gutter-bar colors. Any color setting you set yourself (`#patina.read.fadeColors#`, `#patina.stale.color#`, category `color`/`gutterColor`, and their gutter versions) overrides the palette."
+        },
         "patina.categories": {
           "type": "object",
-          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has a `color` (any CSS color, use transparency) and an optional `label`. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
+          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has an optional `label`, and optional `color` (background) and `gutterColor` (gutter bar) — any CSS color, e.g. `rgba(255, 150, 0, 0.22)`. Without colors, a category uses the palette's color (custom categories get the palette's extra colors in order). If only `color` is set, the gutter uses a more opaque version of it. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
           "default": {
             "next": {
-              "label": "Attend to next",
-              "color": "rgba(64, 140, 255, 0.22)"
+              "label": "Attend to next"
             },
             "question": {
-              "label": "Question",
-              "color": "rgba(180, 90, 255, 0.22)"
+              "label": "Question"
             }
           },
           "additionalProperties": {
@@ -200,11 +215,11 @@
               },
               "color": {
                 "type": "string"
+              },
+              "gutterColor": {
+                "type": "string"
               }
-            },
-            "required": [
-              "color"
-            ]
+            }
           }
         },
         "patina.read.label": {
@@ -217,13 +232,16 @@
           "items": {
             "type": "string"
           },
-          "minItems": 1,
-          "markdownDescription": "Colors a `read` mark fades through as it ages, from just-read to fully faded. Stops are evenly spaced over `#patina.read.fadeDays#`.",
-          "default": [
-            "rgba(46, 160, 67, 0.24)",
-            "rgba(210, 180, 40, 0.20)",
-            "rgba(128, 128, 128, 0.12)"
-          ]
+          "default": [],
+          "markdownDescription": "Background colors a `read` mark fades through as it ages, from just-read to fully faded, evenly spaced over `#patina.read.fadeDays#`. Example: `[\"rgba(46, 160, 67, 0.22)\", \"rgba(210, 180, 40, 0.18)\", \"rgba(128, 128, 128, 0.12)\"]`. Leave empty to use the palette's colors."
+        },
+        "patina.read.gutterFadeColors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "markdownDescription": "Gutter-bar fade colors for `read` marks. If empty but `#patina.read.fadeColors#` is set, a more opaque version of those is used. Leave empty to use the palette's colors."
         },
         "patina.read.fadeDays": {
           "type": "number",
@@ -233,13 +251,33 @@
         },
         "patina.stale.color": {
           "type": "string",
-          "default": "rgba(230, 60, 60, 0.28)",
-          "description": "Background color for stale marks (lines whose content changed outside the editor)."
+          "default": "",
+          "markdownDescription": "Background color for stale marks (lines changed outside the editor), e.g. `rgba(230, 60, 60, 0.28)`. Leave empty to use the palette's colors."
+        },
+        "patina.stale.gutterColor": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Gutter-bar color for stale marks. If empty but `#patina.stale.color#` is set, a more opaque version of it is used. Leave empty to use the palette's colors."
         },
         "patina.showCursorLineAnnotation": {
           "type": "boolean",
           "default": false,
           "description": "Show a faint end-of-line annotation with mark info on the cursor line."
+        },
+        "patina.highlightStyle": {
+          "type": "string",
+          "enum": [
+            "background",
+            "gutter",
+            "gutterAndBackground"
+          ],
+          "enumDescriptions": [
+            "Tint the whole line's background.",
+            "Draw a colored bar in the gutter, just left of the line numbers (shares the column with breakpoints; needs editor.glyphMargin).",
+            "Gutter bar plus the background tint."
+          ],
+          "default": "background",
+          "description": "How marked lines are highlighted."
         },
         "patina.showInOverviewRuler": {
           "type": "boolean",

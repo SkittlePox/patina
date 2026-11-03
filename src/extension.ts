@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
 
   const tracker = new ChangeTracker(store, log);
   tracker.start();
-  const renderer = new DecorationRenderer(store, cfg);
+  const renderer = new DecorationRenderer(store, cfg, vscode.Uri.joinPath(context.globalStorageUri, 'gutter').fsPath);
   const explorer = new ExplorerDecorations(store, getConfig);
   const staleFolders = new StaleFolderDecorations(store, getConfig);
 

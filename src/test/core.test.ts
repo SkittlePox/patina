@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { EditChange, FileMarks, LineSource, READ } from '../core/marks';
 import { deserialize, serialize } from '../core/serialize';
 import { interpolateStops, parseColor } from '../core/color';
+import { gutterBarSvg } from '../core/gutter';
+import { PALETTES, resolveColors } from '../core/palettes';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -296,4 +298,48 @@ test('colors', () => {
   assert.deepEqual(interpolateStops(stops, 0.25), [50, 50, 50, 0.5]);
   assert.deepEqual(interpolateStops(stops, 1), [200, 200, 200, 0]);
   assert.deepEqual(interpolateStops(stops, 2), [200, 200, 200, 0]);
+});
+
+test('gutter bar svg', () => {
+  const svg = gutterBarSvg('rgba(230, 60, 60, 0.85)');
+  assert.match(svg, /fill="#e63c3c" fill-opacity="0.85"/);
+  assert.match(svg, /preserveAspectRatio="none"/);
+  assert.match(gutterBarSvg('red"><script>'), /fill="redscript"/);
+});
+
+test('palettes: every palette is complete and parseable', () => {
+  for (const [id, p] of Object.entries(PALETTES)) {
+    for (const set of [p.background, p.gutter]) {
+      const all = [...set.readFade, set.stale, ...Object.values(set.categories), ...set.extra];
+      for (const c of all) assert.ok(parseColor(c), `${id}: ${c}`);
+      assert.ok(set.readFade.length >= 2 && set.categories.next && set.categories.question, id);
+    }
+    // Gutter bars are stronger than backgrounds.
+    assert.ok(parseColor(p.gutter.stale)![3] > parseColor(p.background.stale)![3], id);
+  }
+});
+
+test('palettes: resolution and overrides', () => {
+  const cats = [{ id: 'next' }, { id: 'question' }, { id: 'todo' }, { id: 'idea' }];
+  const plain = resolveColors('vivid', { categories: cats });
+  assert.deepEqual(plain.background.readFade, PALETTES.vivid.background.readFade);
+  assert.equal(plain.gutter.stale, PALETTES.vivid.gutter.stale);
+  assert.equal(plain.background.categories.get('todo'), PALETTES.vivid.background.extra[0]);
+  assert.equal(plain.gutter.categories.get('idea'), PALETTES.vivid.gutter.extra[1]);
+  assert.deepEqual(resolveColors('nope', { categories: [] }).background.readFade, PALETTES.default.background.readFade);
+
+  const o = resolveColors('muted', {
+    readFade: ['rgba(1, 2, 3, 0.2)', 'rgba(4, 5, 6, 0.1)'],
+    stale: 'rgba(200, 0, 0, 0.3)',
+    staleGutter: '#00ff00',
+    categories: [{ id: 'next', color: 'rgba(9, 9, 9, 0.2)' }, { id: 'todo', color: 'rgba(7, 7, 7, 0.2)', gutterColor: '#123456' }, { id: 'idea' }],
+  });
+  assert.deepEqual(o.background.readFade, ['rgba(1, 2, 3, 0.2)', 'rgba(4, 5, 6, 0.1)']);
+  assert.deepEqual(o.gutter.readFade, ['rgba(1, 2, 3, 0.85)', 'rgba(4, 5, 6, 0.85)']); // derived from background override
+  assert.equal(o.background.stale, 'rgba(200, 0, 0, 0.3)');
+  assert.equal(o.gutter.stale, '#00ff00');
+  assert.equal(o.gutter.categories.get('next'), 'rgba(9, 9, 9, 0.85)');
+  assert.equal(o.gutter.categories.get('todo'), '#123456');
+  assert.equal(o.background.categories.get('idea'), PALETTES.muted.background.extra[0]); // todo was fully custom
+  assert.deepEqual(resolveColors('default', { readFade: [], stale: '  ', categories: [] }).background.stale, PALETTES.default.background.stale);
 });

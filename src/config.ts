@@ -1,21 +1,26 @@
 import * as vscode from 'vscode';
 import { READ } from './core/marks';
+import { DEFAULT_PALETTE, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
 
 export interface CategoryDef {
   id: string;
   label: string;
-  color: string;
 }
+
+export type HighlightStyle = 'background' | 'gutter' | 'gutterAndBackground';
+const HIGHLIGHT_STYLES: HighlightStyle[] = ['background', 'gutter', 'gutterAndBackground'];
 
 export interface PatinaConfig {
   readLabel: string;
-  fadeColors: string[];
   fadeMs: number;
-  staleColor: string;
+  /** Static categories (not `read`), in settings order. */
   categories: Map<string, CategoryDef>;
+  /** Final background and gutter colors: palette plus any overrides. */
+  colors: ResolvedColors;
   showCursorLineAnnotation: boolean;
   showInOverviewRuler: boolean;
+  highlightStyle: HighlightStyle;
   explorerEnabled: boolean;
   storageFile: string;
 }
@@ -25,20 +30,28 @@ const FALLBACK_COLOR = 'rgba(128, 128, 128, 0.15)';
 export function readConfig(): PatinaConfig {
   const c = vscode.workspace.getConfiguration('patina');
   const categories = new Map<string, CategoryDef>();
-  const raw = c.get<Record<string, { label?: string; color?: string }>>('categories') ?? {};
+  const categoryColors: { id: string; color?: string; gutterColor?: string }[] = [];
+  const raw = c.get<Record<string, { label?: string; color?: string; gutterColor?: string }>>('categories') ?? {};
   for (const [id, def] of Object.entries(raw)) {
     if (id === READ || !def) continue;
-    categories.set(id, { id, label: def.label || id, color: def.color || FALLBACK_COLOR });
+    categories.set(id, { id, label: def.label || id });
+    categoryColors.push({ id, color: def.color, gutterColor: def.gutterColor });
   }
-  const fadeColors = c.get<string[]>('read.fadeColors') ?? [];
+  const colors = resolveColors(c.get<string>('palette') || DEFAULT_PALETTE, {
+    readFade: c.get<string[]>('read.fadeColors'),
+    readFadeGutter: c.get<string[]>('read.gutterFadeColors'),
+    stale: c.get<string>('stale.color'),
+    staleGutter: c.get<string>('stale.gutterColor'),
+    categories: categoryColors,
+  });
   return {
     readLabel: c.get<string>('read.label') || 'Read',
-    fadeColors: fadeColors.length ? fadeColors : ['rgba(46, 160, 67, 0.24)'],
     fadeMs: Math.max(0.01, c.get<number>('read.fadeDays') ?? 30) * DAY_MS,
-    staleColor: c.get<string>('stale.color') || 'rgba(230, 60, 60, 0.28)',
     categories,
+    colors,
     showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
+    highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
     storageFile: c.get<string>('storageFile') || '.vscode/patina.json',
   };
