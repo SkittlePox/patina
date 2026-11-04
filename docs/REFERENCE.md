@@ -64,6 +64,7 @@ Categories without colors take them from the palette. Custom categories get the 
 | --- | --- |
 | `default` | Green → yellow → gray for read, red for stale, blue/purple categories |
 | `muted` | Soft, low-contrast tones |
+| `supermuted` | Barely-there tints, close to gray |
 | `vivid` | Saturated, high-contrast colors |
 | `colorblind` | Okabe–Ito colors: blue → sky → gray for read, vermillion for stale, no red/green distinctions |
 

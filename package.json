@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -188,12 +188,14 @@
           "enum": [
             "default",
             "muted",
+            "supermuted",
             "vivid",
             "colorblind"
           ],
           "enumDescriptions": [
             "Green → yellow → gray for read, red for stale, blue/purple categories.",
             "Soft, low-contrast tones that stay out of the way.",
+            "Barely-there tints, close to gray; for when the marks should stay in the background.",
             "Saturated, high-contrast colors.",
             "Okabe–Ito colors: blue → sky → gray for read, vermillion for stale; no red/green distinctions."
           ],

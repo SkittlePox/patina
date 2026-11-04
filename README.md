@@ -52,10 +52,10 @@ Press `ctrl+alt+n` to mark lines to come back to, and `ctrl+alt+q` for a questio
 
 ## Colors
 
-> **Media to make: `docs/media/palettes.png`** (screenshot, 2×2 grid)
-> The same 15–20 line snippet under each palette: `default`, `muted`, `vivid`, `colorblind`. Each copy should have read lines of a few ages, one red (stale) line, and one `next` and one `question` line. Label each quadrant.
+> **Media to make: `docs/media/palettes.png`** (screenshot, grid of five)
+> The same 15–20 line snippet under each palette: `default`, `muted`, `supermuted`, `vivid`, `colorblind`. Each copy should have read lines of a few ages, one red (stale) line, and one `next` and one `question` line. Label each quadrant.
 
-There are four built-in palettes, including a colorblind-safe one, and you can set your own color for any mark. Patina can tint the whole line or draw a bar beside the line numbers.
+There are five built-in palettes, from barely-there to vivid, including a colorblind-safe one, and you can set your own color for any mark. Patina can tint the whole line or draw a bar beside the line numbers.
 
 > **Media to make: `docs/media/gutter.png`** (screenshot)
 > The same snippet side by side: `"patina.highlightStyle": "background"` on the left and `"gutter"` on the right.

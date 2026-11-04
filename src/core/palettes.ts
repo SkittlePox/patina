@@ -67,6 +67,18 @@ export const PALETTES: Record<string, Palette> = {
     },
     { bg: 0.16, bgFaded: 0.08, bar: 0.7, barFaded: 0.4 },
   ),
+  supermuted: palette(
+    'Super muted',
+    'Barely-there tints, close to gray; for when the marks should stay in the background.',
+    {
+      fade: [[130, 155, 130], [160, 155, 130], GRAY],
+      stale: [180, 115, 115],
+      next: [125, 140, 170],
+      question: [150, 135, 170],
+      extra: [[170, 150, 125], [125, 155, 150], [165, 135, 150]],
+    },
+    { bg: 0.09, bgFaded: 0.05, bar: 0.45, barFaded: 0.25 },
+  ),
   vivid: palette(
     'Vivid',
     'Saturated, high-contrast colors.',
