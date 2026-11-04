@@ -1,3 +1,5 @@
+<img src="media/icon.png" alt="" width="96">
+
 # Patina
 
 Patina is an extension for VS Code and Cursor. It highlights the code you've read and shows you what has changed since.

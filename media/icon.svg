@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <title>Patina</title>
+  <rect x="22" y="7" width="76" height="12" rx="6.0" fill="#c87b3c"/>
+  <rect x="22" y="24" width="26" height="12" rx="6.0" fill="#b97e42"/>
+  <rect x="74" y="24" width="32" height="12" rx="6.0" fill="#b97e42"/>
+  <rect x="22" y="41" width="26" height="12" rx="6.0" fill="#a98148"/>
+  <rect x="74" y="41" width="32" height="12" rx="6.0" fill="#a98148"/>
+  <rect x="22" y="58" width="76" height="12" rx="6.0" fill="#9a844e"/>
+  <rect x="22" y="75" width="26" height="12" rx="6.0" fill="#7c8f65"/>
+  <rect x="22" y="92" width="26" height="12" rx="6.0" fill="#5d9b7c"/>
+  <rect x="22" y="109" width="26" height="12" rx="6.0" fill="#3fa693"/>
+</svg>

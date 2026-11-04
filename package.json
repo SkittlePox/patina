@@ -2,8 +2,9 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "publisher": "local",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/SkittlePox/patina.git"
