@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { LineMark, READ } from './core/marks';
 import { compileExcludes } from './core/glob';
-import { DEFAULT_PALETTE, ResolvedColors, resolveColors } from './core/palettes';
+import { DEFAULT_PALETTE, PALETTES, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
 
 export interface CategoryDef {
@@ -17,6 +17,8 @@ export interface PatinaConfig {
   fadeMs: number;
   /** Static categories (not `read`), in settings order. */
   categories: Map<string, CategoryDef>;
+  /** Built-in palette id (validated). */
+  palette: string;
   /** Final background and gutter colors: palette plus any overrides. */
   colors: ResolvedColors;
   showCursorLineAnnotation: boolean;
@@ -40,7 +42,9 @@ export function readConfig(): PatinaConfig {
     categories.set(id, { id, label: def.label || id });
     categoryColors.push({ id, color: def.color, gutterColor: def.gutterColor });
   }
-  const colors = resolveColors(c.get<string>('palette') || DEFAULT_PALETTE, {
+  const paletteSetting = c.get<string>('palette') ?? '';
+  const palette = paletteSetting in PALETTES ? paletteSetting : DEFAULT_PALETTE;
+  const colors = resolveColors(palette, {
     readFade: c.get<string[]>('read.fadeColors'),
     readFadeGutter: c.get<string[]>('read.gutterFadeColors'),
     stale: c.get<string>('stale.color'),
@@ -51,6 +55,7 @@ export function readConfig(): PatinaConfig {
     readLabel: c.get<string>('read.label') || 'Read',
     fadeMs: Math.max(0.01, c.get<number>('read.fadeDays') ?? 30) * DAY_MS,
     categories,
+    palette,
     colors,
     showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
@@ -64,6 +69,14 @@ export function readConfig(): PatinaConfig {
 /** Label for a specific mark: read marks created by typing show as "Edited". */
 export function markLabel(cfg: PatinaConfig, m: LineMark): string {
   return m.cat === READ && m.edited ? 'Edited' : categoryLabel(cfg, m.cat);
+}
+
+export type ExplorerState = 'Fresh' | 'Aging' | 'Old' | 'Stale';
+
+/** Explorer theme color for the active palette, e.g. `patina.explorerFresh` or `patina.muted.explorerFresh`. */
+export function explorerColor(cfg: PatinaConfig, state: ExplorerState): vscode.ThemeColor {
+  const prefix = cfg.palette === DEFAULT_PALETTE ? 'patina.' : `patina.${cfg.palette}.`;
+  return new vscode.ThemeColor(`${prefix}explorer${state}`);
 }
 
 export function categoryLabel(cfg: PatinaConfig, cat: string): string {

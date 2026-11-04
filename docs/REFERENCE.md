@@ -88,12 +88,16 @@ Categories without colors take them from the palette. Custom categories get the 
 
 **Gutter bar placement:** the bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
-**Explorer and annotation colors** are theme colors. You can override them in `workbench.colorCustomizations`:
-- `patina.explorerFresh`
-- `patina.explorerAging`
-- `patina.explorerOld`
-- `patina.explorerStale`
-- `patina.annotationForeground`
+**Explorer colors follow the palette.** File-name colors in the explorer must be theme colors declared in advance, so each palette declares its own four: `patina.explorerFresh`, `Aging`, `Old` and `Stale` for `default`, and `patina.<palette>.explorerFresh` and so on for the others, e.g. `patina.muted.explorerStale`. Your own color settings (`patina.read.fadeColors` and the like) don't reach the explorer; to change those colors, override the theme colors in `workbench.colorCustomizations`:
+
+```jsonc
+"workbench.colorCustomizations": {
+  "patina.muted.explorerFresh": "#7f9a7f",
+  "patina.muted.explorerStale": "#a87878"
+}
+```
+
+The end-of-line note uses `patina.annotationForeground`.
 
 ## Settings
 

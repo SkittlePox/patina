@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { relativeAge } from './core/time';
-import { PatinaConfig } from './config';
+import { explorerColor, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
 /** Explorer badge/color per file: read coverage, freshness, stale flag (stale propagates to folders). */
@@ -40,14 +40,14 @@ export class ExplorerDecorations implements vscode.FileDecorationProvider, vscod
 
     if (s.stale > 0) {
       parts.push(`${s.stale} stale line${s.stale === 1 ? '' : 's'}`);
-      return new vscode.FileDecoration('!', parts.join(' · '), new vscode.ThemeColor('patina.explorerStale'));
+      return new vscode.FileDecoration('!', parts.join(' · '), explorerColor(cfg, 'Stale'));
     }
 
     const badge = s.read === 0 ? '•' : coverage >= 0.995 ? '✓' : String(Math.max(1, pct));
     let color: vscode.ThemeColor | undefined;
     if (s.meanReadAge !== undefined) {
       const f = s.meanReadAge / cfg.fadeMs;
-      color = new vscode.ThemeColor(f < 1 / 3 ? 'patina.explorerFresh' : f < 2 / 3 ? 'patina.explorerAging' : 'patina.explorerOld');
+      color = explorerColor(cfg, f < 1 / 3 ? 'Fresh' : f < 2 / 3 ? 'Aging' : 'Old');
     }
     const deco = new vscode.FileDecoration(badge, parts.join(' · '), color);
     deco.propagate = false;
@@ -78,10 +78,11 @@ export class StaleFolderDecorations implements vscode.FileDecorationProvider, vs
   }
 
   provideFileDecoration(uri: vscode.Uri): vscode.FileDecoration | undefined {
-    if (!this.getConfig().explorerEnabled) return undefined;
+    const cfg = this.getConfig();
+    if (!cfg.explorerEnabled) return undefined;
     const s = this.store.stats(uri);
     if (!s || s.stale === 0) return undefined;
-    const deco = new vscode.FileDecoration(undefined, undefined, new vscode.ThemeColor('patina.explorerStale'));
+    const deco = new vscode.FileDecoration(undefined, undefined, explorerColor(cfg, 'Stale'));
     deco.propagate = true;
     return deco;
   }
