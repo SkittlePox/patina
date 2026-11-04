@@ -611,3 +611,10 @@ test('line note: stale label placeholder', () => {
   const formats = { ...DEFAULT_LINE_NOTE_FORMATS, stale: '{staleLabel} {staleAge} ago' };
   assert.equal(formatLineNote(formats, fm.get(0)!, 'Read', T1, 1, 'Changed'), 'Changed 1m ago');
 });
+
+test('placeholders: case filters', () => {
+  const v = new Map<string, number | string | undefined>([['label', 'Read'], ['n', 2], ['cat', 'attend to next']]);
+  assert.equal(formatSummary(['was last {label|lower} 5h ago'], v), 'was last read 5h ago');
+  assert.equal(formatSummary(['{label|upper}', '{cat|capitalize}', '{n:line|upper}', '{label|bogus}'], v), 'READ · Attend to next · 2 LINES · Read');
+  assert.equal(formatSummary(['{missing|lower} x', 'kept'], v), 'kept');
+});

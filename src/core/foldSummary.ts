@@ -87,25 +87,34 @@ export function summaryValues(
   return v;
 }
 
-const PLACEHOLDER = /\{([A-Za-z0-9_.-]+)(?::([^{}]+))?\}/g;
+const PLACEHOLDER = /\{([A-Za-z0-9_.-]+)(?::([^{}|]+))?((?:\|[A-Za-z]+)*)\}/g;
+
+const FILTERS: Record<string, (s: string) => string> = {
+  lower: (s) => s.toLowerCase(),
+  upper: (s) => s.toUpperCase(),
+  capitalize: (s) => s.charAt(0).toUpperCase() + s.slice(1),
+};
 
 /**
  * Fills each segment's `{name}` placeholders and joins the segments with ` · `.
  * A segment is left out when any of its placeholders has nothing to report (unknown, empty or a zero count).
  * `{name:word}` on a count also writes the word, pluralised: `{edited:line}` → `1 line`, `14 lines`.
+ * `|lower`, `|upper` and `|capitalize` change the case: `{label|lower}` → `read`. Unknown filters are ignored.
  */
 export function formatSummary(segments: readonly string[], values: ReadonlyMap<string, SummaryValue>): string {
   const out: string[] = [];
   for (const seg of segments) {
     let missing = false;
-    const text = seg.replace(PLACEHOLDER, (_, name: string, word?: string) => {
+    const text = seg.replace(PLACEHOLDER, (_, name: string, word: string | undefined, filters: string) => {
       const val = values.get(name);
       if (val === undefined || val === '' || val === 0) {
         missing = true;
         return '';
       }
-      if (word === undefined) return String(val);
-      return typeof val === 'number' ? `${val} ${word}${val === 1 ? '' : 's'}` : `${val} ${word}`;
+      let out = String(val);
+      if (word !== undefined) out = typeof val === 'number' ? `${val} ${word}${val === 1 ? '' : 's'}` : `${val} ${word}`;
+      for (const f of filters.split('|').slice(1)) out = FILTERS[f.toLowerCase()]?.(out) ?? out;
+      return out;
     });
     if (!missing && text.trim() !== '') out.push(text.trim());
   }

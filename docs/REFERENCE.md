@@ -122,6 +122,8 @@ The text comes from `patina.fold.summaryFormat`, a list of segments joined with 
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
 
+Add `|lower`, `|upper` or `|capitalize` to any placeholder to change its case, such as `{categories|lower}`. This works in end-of-line note templates too.
+
 **Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint. Each stale line counts as `patina.fold.staleWeight` lines (default 10), so even a few stale lines make the folded line stand out. Turn this off with `patina.fold.highlight`. Set `"editor.foldingHighlight": false` too, or the editor's own tint on folded lines covers this color.
 
 Clicking the summary unfolds the block, just like clicking the editor's `⋯`.
@@ -142,7 +144,7 @@ With `patina.annotations.cursorLine` on, the cursor line shows a faint note abou
 }
 ```
 
-Each value is a string, or a list of segments joined with ` · `, using the same rules as the folded-block summary. A segment is left out when any placeholder in it has nothing to report. For example, `["⚠ changed {staleAge} ago", "{removed:line} deleted nearby"]` mentions deleted lines only when there are some.
+Each value is a string, or a list of segments joined with ` · `, using the same rules as the folded-block summary. A segment is left out when any placeholder in it has nothing to report. For example, `["⚠ changed {staleAge} ago", "{removed:line} deleted nearby"]` mentions deleted lines only when there are some. `"⚠ changed outside editor {staleAge} ago · was last {label|lower} {age} ago"` ends with `was last read 5h ago`.
 
 | Placeholder | |
 | --- | --- |
