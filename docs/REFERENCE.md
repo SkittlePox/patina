@@ -120,7 +120,7 @@ The text comes from `patina.foldSummary.format`, a list of segments joined with 
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
 
-**Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint. Each stale line counts as `patina.foldSummary.staleWeight` lines (default 10), so even a few stale lines make the folded line stand out. Turn this off with `patina.foldSummary.highlight`.
+**Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint. Each stale line counts as `patina.foldSummary.staleWeight` lines (default 10), so even a few stale lines make the folded line stand out. Turn this off with `patina.foldSummary.highlight`. Set `"editor.foldingHighlight": false` too, or the editor's own tint on folded lines covers this color.
 
 Clicking the summary unfolds the block, just like clicking the editor's `⋯`.
 

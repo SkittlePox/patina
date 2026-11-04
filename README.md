@@ -81,4 +81,11 @@ To mark a whole file or folder, right-click it in the explorer and choose **Pati
 
 Marks are saved in your project's `.vscode/patina.json`. They don't leave your machine unless you commit that file.
 
+## Recommended settings
+
+```jsonc
+// The editor's own folding highlight tints folded lines and hides Patina's color for the folded block.
+"editor.foldingHighlight": false
+```
+
 Settings, commands and how change detection works are covered in [docs/REFERENCE.md](docs/REFERENCE.md).
