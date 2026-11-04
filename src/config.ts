@@ -18,11 +18,11 @@ const FOLD_SUMMARY_MODES: FoldSummaryMode[] = ['always', 'cursorLine', 'off'];
 
 /** Named segments of the folded-block summary, shown in this order. */
 export const DEFAULT_FOLD_SUMMARY_FORMAT: Record<string, string> = {
-  read: 'Contents: {readPercent}% read',
+  read: 'Contents {readPercent}% read',
   readAge: 'avg {readAge} ago',
-  edited: '{edited:line} edited, most recently {editedNewest} ago',
+  edited: '',
   categories: '{categories}',
-  stale: '⚠ {stale} changed outside editor',
+  stale: '⚠ {stale:line} changed outside editor',
 };
 
 export interface PatinaConfig {
@@ -87,7 +87,7 @@ export function readConfig(): PatinaConfig {
     fadeMs: Math.max(0.01, c.get<number>('read.fadeDays') ?? 30) * DAY_MS,
     categories,
     colors,
-    showCursorLineAnnotation: c.get<boolean>('annotations.cursorLine') ?? false,
+    showCursorLineAnnotation: c.get<boolean>('annotations.cursorLine') ?? true,
     lineNoteFormats: lineNoteFormats(c.get<unknown>('annotations.format')),
     foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('fold.summary')) ?? 'always',
     foldSummaryFormat: foldSummaryFormat(c.get<unknown>('fold.summaryFormat')),

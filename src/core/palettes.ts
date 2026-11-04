@@ -105,7 +105,7 @@ export const PALETTES: Record<string, Palette> = {
   ),
 };
 
-export const DEFAULT_PALETTE = 'default';
+export const DEFAULT_PALETTE = 'supermuted';
 const FALLBACK = 'rgba(128, 128, 128, 0.15)';
 /** A background override without a gutter override gets this minimum opacity in the gutter. */
 const DERIVED_GUTTER_MIN_ALPHA = 0.85;

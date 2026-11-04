@@ -92,7 +92,7 @@ Categories without colors take them from the palette. Custom categories get the 
 When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
 
 ```
-Contents: 60% read · avg 3h ago · 14 lines edited, most recently 1h ago · 2 Question
+Contents 60% read · avg 3h ago · 2 Question · ⚠ 1 line changed outside editor
 ```
 
 The summary replaces the first line's own end-of-line note. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
@@ -103,11 +103,11 @@ The text comes from `patina.fold.summaryFormat`, a set of named segments joined 
 
 ```jsonc
 "patina.fold.summaryFormat": {
-  "read": "Contents: {readPercent}% read",
+  "read": "Contents {readPercent}% read",
   "readAge": "avg {readAge} ago",
-  "edited": "{edited:line} edited, most recently {editedNewest} ago",
+  "edited": "",   // hidden by default; e.g. "{edited:line} edited, most recently {editedNewest} ago"
   "categories": "{categories}",
-  "stale": "⚠ {stale} changed outside editor"
+  "stale": "⚠ {stale:line} changed outside editor"
 }
 ```
 
@@ -132,13 +132,13 @@ Patina detects folds from the editor's visible lines, so it updates as you fold,
 
 ## End-of-line notes
 
-With `patina.annotations.cursorLine` on, the cursor line shows a faint note about its mark. Turn on `patina.annotations.staleLines` to show the note on every stale line, wherever the cursor is. `patina.annotations.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
+The cursor line shows a faint note about its mark (turn this off with `patina.annotations.cursorLine`). Turn on `patina.annotations.staleLines` to show the note on every stale line, wherever the cursor is. `patina.annotations.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
 
 ```jsonc
 "patina.annotations.format": {
   "read": "{label} · {age} ago",
   "edited": "{label} · {age} ago",
-  "stale": "⚠ changed outside editor {staleAge} ago · was {label} · {age} ago",
+  "stale": "⚠ changed outside editor {staleAge} ago · was last {label|lower} {age} ago",
   "category": "{label} · {age} ago",
   "question": "❓ {date}"   // a category id gives that category its own text
 }
@@ -163,7 +163,7 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 
 | Setting | Default | |
 | --- | --- | --- |
-| `patina.palette` | `default` | Built-in palette |
+| `patina.palette` | `supermuted` | Built-in palette |
 | `patina.highlightStyle` | `background` | `background`: tint the line. `gutter`: bar left of the line numbers. `gutterAndBackground`: both |
 | `patina.categories` | `next`, `question` | Static categories: label, optional `color` and `gutterColor` |
 | `patina.read.label` | `Read` | |
@@ -174,7 +174,7 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.stale.label` | `Stale` | Label for lines changed outside the editor |
 | `patina.stale.color` | from palette | Background for stale lines |
 | `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
-| `patina.annotations.cursorLine` | `false` | Faint end-of-line note on the cursor line |
+| `patina.annotations.cursorLine` | `true` | Faint end-of-line note on the cursor line |
 | `patina.annotations.staleLines` | `false` | Show the note on every stale line, not just the cursor line |
 | `patina.annotations.format` | see [End-of-line notes](#end-of-line-notes) | Text of those notes for each kind of mark |
 | `patina.fold.summary` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |

@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -199,7 +199,7 @@
             "Saturated, high-contrast colors.",
             "Okabe–Ito colors: blue → sky → gray for read, vermillion for stale; no red/green distinctions."
           ],
-          "default": "default",
+          "default": "supermuted",
           "markdownDescription": "Built-in color palette. Each palette has translucent background colors and stronger gutter-bar colors. Any color setting you set yourself (`#patina.read.fadeColors#`, `#patina.stale.color#`, category `color`/`gutterColor`, and their gutter versions) overrides the palette."
         },
         "patina.categories": {
@@ -277,7 +277,7 @@
         },
         "patina.annotations.cursorLine": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "markdownDescription": "Show a faint end-of-line note with mark info on the cursor line. The text comes from `#patina.annotations.format#`."
         },
         "patina.annotations.staleLines": {
@@ -290,7 +290,7 @@
           "default": {
             "read": "{label} · {age} ago",
             "edited": "{label} · {age} ago",
-            "stale": "⚠ changed outside editor {staleAge} ago · was {label} · {age} ago",
+            "stale": "⚠ changed outside editor {staleAge} ago · was last {label|lower} {age} ago",
             "category": "{label} · {age} ago"
           },
           "properties": {
@@ -320,11 +320,11 @@
         "patina.fold.summaryFormat": {
           "type": "object",
           "default": {
-            "read": "Contents: {readPercent}% read",
+            "read": "Contents {readPercent}% read",
             "readAge": "avg {readAge} ago",
-            "edited": "{edited:line} edited, most recently {editedNewest} ago",
+            "edited": "",
             "categories": "{categories}",
-            "stale": "⚠ {stale} changed outside editor"
+            "stale": "⚠ {stale:line} changed outside editor"
           },
           "properties": {
             "read": {

@@ -3,7 +3,7 @@
 Patina is an extension for VS Code and Cursor. It highlights the code you've read and shows you what has changed since.
 
 > **Media to make: `docs/media/reading.gif`** (GIF, about 8 s)
-> Open a real source file in a project you know. Turn on `patina.annotations.cursorLine`.
+> Open a real source file in a project you know.
 > 1. Select a function and press `ctrl+alt+r`. It turns green.
 > 2. Select the next block and mark it too.
 > 3. Hover a marked line to show the "Read · Marked … (just now)" tooltip.

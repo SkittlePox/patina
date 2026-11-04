@@ -332,7 +332,7 @@ test('palettes: resolution and overrides', () => {
   assert.equal(plain.gutter.stale, PALETTES.vivid.gutter.stale);
   assert.equal(plain.background.categories.get('todo'), PALETTES.vivid.background.extra[0]);
   assert.equal(plain.gutter.categories.get('idea'), PALETTES.vivid.gutter.extra[1]);
-  assert.deepEqual(resolveColors('nope', { categories: [] }).background.readFade, PALETTES.default.background.readFade);
+  assert.deepEqual(resolveColors('nope', { categories: [] }).background.readFade, PALETTES.supermuted.background.readFade);
 
   const o = resolveColors('muted', {
     readFade: ['rgba(1, 2, 3, 0.2)', 'rgba(4, 5, 6, 0.1)'],
@@ -575,7 +575,7 @@ test('line note: default text per kind of mark', () => {
   fm.validate(src(['a', 'B', 'c']), T1 - 5 * H);
   assert.equal(
     formatLineNote(DEFAULT_LINE_NOTE_FORMATS, fm.get(1)!, 'Read', T1, 30 * 24 * H),
-    '⚠ changed outside editor 5h ago · was Read · 1d ago',
+    '⚠ changed outside editor 5h ago · was last read 1d ago',
   );
 });
 

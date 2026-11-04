@@ -11,7 +11,7 @@ export type LineNoteFormats = Record<string, NoteFormat>;
 export const DEFAULT_LINE_NOTE_FORMATS: LineNoteFormats = {
   read: '{label} · {age} ago',
   edited: '{label} · {age} ago',
-  stale: '⚠ changed outside editor {staleAge} ago · was {label} · {age} ago',
+  stale: '⚠ changed outside editor {staleAge} ago · was last {label|lower} {age} ago',
   category: '{label} · {age} ago',
 };
 
