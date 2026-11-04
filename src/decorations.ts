@@ -18,7 +18,7 @@ const REFRESH_MS = 10 * 60 * 1000;
 /** Folded-block highlight colors kept as decoration types before unused ones are dropped. */
 const MAX_FOLD_TYPES = 100;
 
-const gapSignature = (gaps: FoldedGap[]) => gaps.map((g) => `${g.header}-${g.end}`).join(',');
+const gapSignature = (gaps: (FoldedGap & { minor: boolean })[]) => gaps.map((g) => `${g.header}-${g.end}${g.minor ? 'm' : ''}`).join(',');
 
 /** Renders line highlights (background tint and/or gutter bar), overview ruler marks and the optional cursor-line annotation. */
 export class DecorationRenderer implements vscode.Disposable {
@@ -116,7 +116,7 @@ export class DecorationRenderer implements vscode.Disposable {
       }
       if (this.cfg.foldHighlight) {
         for (const gap of gaps) {
-          if (gap.header >= lineCount) continue;
+          if (gap.minor) continue;
           const key = this.foldKey(marks, doc, gap.header, gap.end, now);
           if (key) keyed.set(gap.header, key);
           else keyed.delete(gap.header);
@@ -148,16 +148,19 @@ export class DecorationRenderer implements vscode.Disposable {
     this.renderAnnotation(editor);
   }
 
-  /** Folded blocks currently hidden in an editor that should be summarized (big enough, not a skipped parameter list). */
-  private gapsOf(editor: vscode.TextEditor): FoldedGap[] {
+  /**
+   * Folded blocks currently hidden in an editor. Minor ones (smaller than the minimum, or parameter lists unless
+   * those are summarized in full) get no blended highlight and show their summary only on the cursor line.
+   */
+  private gapsOf(editor: vscode.TextEditor): (FoldedGap & { minor: boolean })[] {
     const doc = editor.document;
     const min = this.cfg.foldSummaryMinLines;
-    return foldedGaps(editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line }))).filter(
-      (g) =>
-        g.header < doc.lineCount &&
-        g.end - g.start + 1 >= min &&
-        (this.cfg.foldSummaryParameterLists || !this.isParameterListFold(doc, g.header)),
-    );
+    return foldedGaps(editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line })))
+      .filter((g) => g.header < doc.lineCount)
+      .map((g) => ({
+        ...g,
+        minor: g.end - g.start + 1 < min || (!this.cfg.foldSummaryParameterLists && this.isParameterListFold(doc, g.header)),
+      }));
   }
 
   /**
@@ -279,7 +282,7 @@ export class DecorationRenderer implements vscode.Disposable {
     const src: LineSource = { lineCount: doc.lineCount, lineAt: (i) => doc.lineAt(i).text };
     const order = [...this.cfg.categories.keys()];
     for (const gap of this.gapsOf(editor)) {
-      if (this.cfg.foldSummary === 'cursorLine' && !(active && gap.header === cursor)) continue;
+      if ((gap.minor || this.cfg.foldSummary === 'cursorLine') && !(active && gap.header === cursor)) continue;
       const stats = blockStats(marks, src, gap.start, gap.end, now);
       const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c) => categoryLabel(this.cfg, c), order));
       if (text) notes.set(gap.header, text);

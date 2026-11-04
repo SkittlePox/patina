@@ -95,9 +95,9 @@ When you fold a block, the end of its first line shows a summary of the marks in
 Contents: 60% read · avg 3h ago · 14 lines edited, most recently 1h ago · 2 Question
 ```
 
-The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a folded argument list, get no summary and no blended highlight.
+The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. That line also keeps its normal highlight instead of the blended one.
 
-Folded parameter lists of function and method definitions are skipped too, whatever their size. Turn on `patina.foldSummary.parameterLists` to summarize them. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
+Folded parameter lists of function and method definitions are treated the same way, whatever their size. Turn on `patina.foldSummary.parameterLists` to treat them like any other block. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
 The text comes from `patina.foldSummary.format`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
@@ -173,8 +173,8 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
 | `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
 | `patina.foldSummary.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
-| `patina.foldSummary.minLines` | `5` | Smaller folded blocks get no summary or blended highlight |
-| `patina.foldSummary.parameterLists` | `false` | Also summarize folded parameter lists of function definitions |
+| `patina.foldSummary.minLines` | `5` | Smaller folded blocks show their summary only on the cursor line, with no blended highlight |
+| `patina.foldSummary.parameterLists` | `false` | Treat folded parameter lists like other blocks instead of like small ones |
 | `patina.foldSummary.staleWeight` | `10` | How many lines each stale line counts as in the blended highlight |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
