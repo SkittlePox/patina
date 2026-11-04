@@ -40,19 +40,23 @@ export function withMinAlpha([r, g, b, a]: RGBA, min: number): RGBA {
 }
 
 /**
- * Average of several colors where `undefined` counts as fully transparent: the hue is the alpha-weighted mean
- * of the given colors and the alpha is the mean alpha, so the result gets fainter as fewer entries have a color.
+ * Weighted average of several colors where `undefined` counts as fully transparent: the hue is the
+ * (alpha × weight)-weighted mean of the given colors and the alpha is the weighted mean alpha, so the result
+ * gets fainter as fewer entries have a color. Weights default to 1.
  */
-export function averageColors(colors: readonly (RGBA | undefined)[]): RGBA | undefined {
+export function averageColors(colors: readonly (RGBA | undefined)[], weights?: readonly number[]): RGBA | undefined {
   let sumA = 0;
+  let sumW = 0;
   const rgb = [0, 0, 0];
-  for (const c of colors) {
-    if (!c || c[3] <= 0) continue;
-    sumA += c[3];
-    for (let k = 0; k < 3; k++) rgb[k] += c[k] * c[3];
-  }
-  if (sumA <= 0 || colors.length === 0) return undefined;
-  return [rgb[0] / sumA, rgb[1] / sumA, rgb[2] / sumA, sumA / colors.length];
+  colors.forEach((c, i) => {
+    const w = weights?.[i] ?? 1;
+    sumW += w;
+    if (!c || c[3] <= 0) return;
+    sumA += c[3] * w;
+    for (let k = 0; k < 3; k++) rgb[k] += c[k] * c[3] * w;
+  });
+  if (sumA <= 0 || sumW <= 0) return undefined;
+  return [rgb[0] / sumA, rgb[1] / sumA, rgb[2] / sumA, Math.min(1, sumA / sumW)];
 }
 
 /** Rounds a color to coarse steps so similar blends share one decoration type. */

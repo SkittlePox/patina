@@ -30,10 +30,6 @@ export class DecorationRenderer implements vscode.Disposable {
       color: new vscode.ThemeColor('patina.annotationForeground'),
       margin: '0 0 0 3em',
       fontStyle: 'italic',
-      // Take the note out of the line's layout (decoration CSS is passed through as-is). The editor then treats a
-      // click on it as a click after the end of the line instead of on the last character, so clicking the note
-      // on a folded block's first line doesn't unfold it (unless `editor.unfoldOnClickAfterEndOfLine` is on).
-      textDecoration: 'none; position: absolute; pointer-events: none',
     },
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
   });
@@ -149,9 +145,12 @@ export class DecorationRenderer implements vscode.Disposable {
     this.renderAnnotation(editor);
   }
 
-  /** Folded blocks currently hidden in an editor. */
+  /** Folded blocks currently hidden in an editor that are big enough to summarize. */
   private gapsOf(editor: vscode.TextEditor): FoldedGap[] {
-    return foldedGaps(editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line })));
+    const min = this.cfg.foldSummaryMinLines;
+    return foldedGaps(editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line }))).filter(
+      (g) => g.header < editor.document.lineCount && g.end - g.start + 1 >= min,
+    );
   }
 
   private onVisibleRangesChanged(editor: vscode.TextEditor): void {
@@ -162,19 +161,22 @@ export class DecorationRenderer implements vscode.Disposable {
 
   /**
    * Style key for a folded block's first line: the average of the colors of the block's non-blank lines
-   * (first line included), unmarked lines counting as transparent. Undefined if nothing in the block is marked.
+   * (first line included), unmarked lines counting as transparent and stale lines counting extra.
+   * Undefined if nothing in the block is marked.
    */
   private foldKey(marks: FileMarks, doc: vscode.TextDocument, start: number, end: number, now: number): string | undefined {
     const bg: (RGBA | undefined)[] = [];
     const gutter: (RGBA | undefined)[] = [];
+    const weights: number[] = [];
     for (let i = start; i <= Math.min(end, doc.lineCount - 1); i++) {
       if (i !== start && doc.lineAt(i).isEmptyOrWhitespace) continue;
       const m = marks.get(i);
       bg.push(m && this.lineColor(m, now, this.cfg.colors.background, this.bgStops));
       gutter.push(m && this.lineColor(m, now, this.cfg.colors.gutter, this.gutterStops));
+      weights.push(m?.stale !== undefined ? this.cfg.foldStaleWeight : 1);
     }
-    const b = averageColors(bg);
-    const g = averageColors(gutter);
+    const b = averageColors(bg, weights);
+    const g = averageColors(gutter, weights);
     if (!b || !g) return undefined;
     return `fold:${formatColor(quantizeColor(b))}|${formatColor(quantizeColor(g))}`;
   }
@@ -209,7 +211,10 @@ export class DecorationRenderer implements vscode.Disposable {
     );
   }
 
-  /** End-of-line notes by line: the cursor line's mark, and summaries of folded blocks on their first lines. */
+  /**
+   * End-of-line notes by line: the cursor line's mark, and summaries of folded blocks on their first lines.
+   * A folded block's summary replaces its first line's own note.
+   */
   annotations(editor: vscode.TextEditor): Map<number, string> {
     const notes = new Map<number, string>();
     const doc = editor.document;
@@ -217,14 +222,10 @@ export class DecorationRenderer implements vscode.Disposable {
     const now = Date.now();
     const active = editor === vscode.window.activeTextEditor;
     const cursor = editor.selection.active.line;
-    const gaps = this.gapsOf(editor).filter((g) => g.header < doc.lineCount);
     if (this.cfg.showCursorLineAnnotation && active && cursor < doc.lineCount) {
       const m = marks?.get(cursor);
       if (m) {
-        let label = markLabel(this.cfg, m);
-        // On a folded block's first line, say the mark is the line's own and not the block's.
-        if (gaps.some((g) => g.header === cursor)) label = this.cfg.foldLineLabel.replace(/\{label\}/g, label) || label;
-        let text = `${label} · ${shortAge(now - m.t)} ago`;
+        let text = `${markLabel(this.cfg, m)} · ${shortAge(now - m.t)} ago`;
         if (m.stale !== undefined) text = `⚠ changed outside editor ${shortAge(now - m.stale)} ago · was ${text}`;
         notes.set(cursor, text);
       }
@@ -233,13 +234,11 @@ export class DecorationRenderer implements vscode.Disposable {
     if (this.cfg.foldSummary === 'off' || !marks) return notes;
     const src: LineSource = { lineCount: doc.lineCount, lineAt: (i) => doc.lineAt(i).text };
     const order = [...this.cfg.categories.keys()];
-    for (const gap of gaps) {
+    for (const gap of this.gapsOf(editor)) {
       if (this.cfg.foldSummary === 'cursorLine' && !(active && gap.header === cursor)) continue;
       const stats = blockStats(marks, src, gap.start, gap.end, now);
       const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c) => categoryLabel(this.cfg, c), order));
-      if (!text) continue;
-      const own = notes.get(gap.header);
-      notes.set(gap.header, own ? `${own} · ${text}` : text);
+      if (text) notes.set(gap.header, text);
     }
     return notes;
   }

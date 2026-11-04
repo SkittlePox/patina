@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -283,7 +283,7 @@
             "Never."
           ],
           "default": "always",
-          "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. On the cursor line it follows the line's own note when `#patina.showCursorLineAnnotation#` is on. The text comes from `#patina.foldSummary.format#`."
+          "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. It replaces the first line's own cursor-line note. Blocks smaller than `#patina.foldSummary.minLines#` are skipped. The text comes from `#patina.foldSummary.format#`."
         },
         "patina.foldSummary.format": {
           "type": "array",
@@ -302,12 +302,19 @@
         "patina.foldSummary.highlight": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "While a block is folded, highlight its first line with the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing, so a mostly unread block gets a faint tint and a block with many stale lines leans toward the stale color."
+          "markdownDescription": "While a block is folded, highlight its first line with the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color (weighted by `#patina.foldSummary.staleWeight#`), category lines their category color, and unmarked lines nothing, so a mostly unread block gets a faint tint and even a few stale lines pull it toward the stale color."
         },
-        "patina.foldSummary.lineLabel": {
-          "type": "string",
-          "default": "Line {label}",
-          "markdownDescription": "How the cursor-line note (`#patina.showCursorLineAnnotation#`) labels a folded block's first line, so its own mark isn't confused with the block's contents. `{label}` is the mark's label, e.g. `Read` gives `Line Read · 5h ago`. Use `{label}` alone to keep the plain label."
+        "patina.foldSummary.minLines": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 5,
+          "markdownDescription": "Folded blocks that hide fewer lines than this (such as a folded argument list) get no summary and no blended highlight; their first line looks and reads as it does unfolded."
+        },
+        "patina.foldSummary.staleWeight": {
+          "type": "number",
+          "minimum": 1,
+          "default": 10,
+          "markdownDescription": "How many lines each stale line counts as in a folded block's blended highlight (`#patina.foldSummary.highlight#`), so a few stale lines make the folded line stand out. `1` weighs every line equally."
         },
         "patina.highlightStyle": {
           "type": "string",

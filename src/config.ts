@@ -37,8 +37,10 @@ export interface PatinaConfig {
   foldSummaryFormat: string[];
   /** While a block is folded, tint its first line with the average color of the lines in it. */
   foldHighlight: boolean;
-  /** Template for a folded block's first-line label in the cursor-line note; `{label}` is the mark's label. */
-  foldLineLabel: string;
+  /** Folded blocks hiding fewer lines than this get no summary or blended highlight. */
+  foldSummaryMinLines: number;
+  /** How much more a stale line counts than other lines in a folded block's blended highlight. */
+  foldStaleWeight: number;
   showInOverviewRuler: boolean;
   highlightStyle: HighlightStyle;
   explorerEnabled: boolean;
@@ -77,7 +79,8 @@ export function readConfig(): PatinaConfig {
     foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('foldSummary.show')) ?? 'always',
     foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
     foldHighlight: c.get<boolean>('foldSummary.highlight') ?? true,
-    foldLineLabel: c.get<string>('foldSummary.lineLabel') ?? 'Line {label}',
+    foldSummaryMinLines: Math.max(1, Math.floor(c.get<number>('foldSummary.minLines') ?? 5)),
+    foldStaleWeight: Math.max(1, c.get<number>('foldSummary.staleWeight') ?? 10),
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,

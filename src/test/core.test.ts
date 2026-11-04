@@ -548,3 +548,16 @@ test('fold highlight: average color counts unmarked lines as transparent', () =>
   assert.deepEqual(mix.map((v) => Math.round(v * 1000) / 1000), [50, 150, 0, 0.2]);
   assert.deepEqual(quantizeColor([51, 149, 3, 0.1234]), [48, 152, 0, 0.12]);
 });
+
+test('fold highlight: weights let a few stale lines dominate', () => {
+  const green: [number, number, number, number] = [0, 200, 0, 0.2];
+  const red: [number, number, number, number] = [200, 0, 0, 0.2];
+  const colors = [green, green, green, green, green, green, green, green, green, red];
+  const plain = averageColors(colors)!;
+  const weighted = averageColors(colors, [1, 1, 1, 1, 1, 1, 1, 1, 1, 10])!;
+  assert.equal(Math.round(plain[0]), 20); // 1 in 10 red
+  assert.equal(Math.round(weighted[0]), Math.round((200 * 10) / 19)); // 10 in 19 red
+  // An unmarked block with one stale line: the stale weight also raises the opacity.
+  const sparse = averageColors([undefined, undefined, undefined, red], [1, 1, 1, 10])!;
+  assert.equal(Math.round(sparse[3] * 1000) / 1000, Math.round((0.2 * 10 / 13) * 1000) / 1000);
+});
