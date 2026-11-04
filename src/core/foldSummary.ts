@@ -112,10 +112,17 @@ export function formatSummary(segments: readonly string[], values: ReadonlyMap<s
   return out.join(' · ');
 }
 
+/** A folded block: `header` is its visible first line, `start`..`end` the hidden lines. */
+export interface FoldedGap {
+  header: number;
+  start: number;
+  end: number;
+}
+
 /** Folded (hidden) line ranges, inferred from the gaps between an editor's visible ranges. */
-export function foldedGaps(visible: readonly { start: number; end: number }[]): { header: number; start: number; end: number }[] {
+export function foldedGaps(visible: readonly { start: number; end: number }[]): FoldedGap[] {
   const sorted = [...visible].sort((a, b) => a.start - b.start);
-  const gaps: { header: number; start: number; end: number }[] = [];
+  const gaps: FoldedGap[] = [];
   for (let i = 1; i < sorted.length; i++) {
     const prevEnd = sorted[i - 1].end;
     const nextStart = sorted[i].start;

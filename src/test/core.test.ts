@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EditChange, FileMarks, LineSource, READ } from '../core/marks';
 import { deserialize, serialize } from '../core/serialize';
-import { interpolateStops, parseColor } from '../core/color';
+import { averageColors, interpolateStops, parseColor, quantizeColor } from '../core/color';
 import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
@@ -534,4 +534,17 @@ test('fold summary: folded gaps from visible ranges', () => {
     ],
   );
   assert.deepEqual(foldedGaps([{ start: 0, end: 4 }, { start: 5, end: 9 }]), []);
+});
+
+test('fold highlight: average color counts unmarked lines as transparent', () => {
+  const green: [number, number, number, number] = [0, 200, 0, 0.2];
+  const red: [number, number, number, number] = [200, 0, 0, 0.2];
+  assert.equal(averageColors([undefined, undefined]), undefined);
+  assert.deepEqual(averageColors([green, green]), [0, 200, 0, 0.2]);
+  // Half read: same hue, half the opacity.
+  assert.deepEqual(averageColors([green, undefined]), [0, 200, 0, 0.1]);
+  // Read and stale mix by share.
+  const mix = averageColors([green, green, green, red])!;
+  assert.deepEqual(mix.map((v) => Math.round(v * 1000) / 1000), [50, 150, 0, 0.2]);
+  assert.deepEqual(quantizeColor([51, 149, 3, 0.1234]), [48, 152, 0, 0.12]);
 });

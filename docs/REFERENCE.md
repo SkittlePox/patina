@@ -95,7 +95,7 @@ When you fold a block, the end of its first line shows a summary of the marks in
 Contents: 60% read · read on average 3h ago · 14 lines edited, most recently 1h ago · 2 Question
 ```
 
-On the cursor line it follows the line's own note (if `patina.showCursorLineAnnotation` is on). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
+On the cursor line it follows the line's own note (if `patina.showCursorLineAnnotation` is on), which is relabelled `Line Read · 5h ago` so it isn't mistaken for the block's. Change that wording with `patina.foldSummary.lineLabel` (default `Line {label}`). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
 The text comes from `patina.foldSummary.format`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
@@ -120,6 +120,10 @@ The text comes from `patina.foldSummary.format`, a list of segments joined with 
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
 
+**Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint, and a block with many stale lines leans toward the stale color. Turn this off with `patina.foldSummary.highlight`.
+
+Clicking the end-of-line note doesn't unfold the block. Clicking the editor's own `⋯` still does. Notes sit on top of the line rather than widening it, so a very long note is cut off at the window edge.
+
 Patina detects folds from the editor's visible lines, so it updates as you fold, unfold and scroll. A block folded right at the bottom edge of the window gets its summary once the line after it scrolls into view.
 
 The end-of-line note uses the theme color `patina.annotationForeground`, which you can override in `workbench.colorCustomizations`.
@@ -140,6 +144,8 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
 | `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
 | `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
+| `patina.foldSummary.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
+| `patina.foldSummary.lineLabel` | `Line {label}` | Label of a folded first line's own mark in the cursor-line note |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
 | `patina.exclude` | `[]` | Glob patterns for files and folders never to track |

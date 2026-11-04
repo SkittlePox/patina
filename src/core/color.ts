@@ -38,3 +38,25 @@ export function interpolateStops(stops: RGBA[], f: number): RGBA {
 export function withMinAlpha([r, g, b, a]: RGBA, min: number): RGBA {
   return [r, g, b, Math.max(a, min)];
 }
+
+/**
+ * Average of several colors where `undefined` counts as fully transparent: the hue is the alpha-weighted mean
+ * of the given colors and the alpha is the mean alpha, so the result gets fainter as fewer entries have a color.
+ */
+export function averageColors(colors: readonly (RGBA | undefined)[]): RGBA | undefined {
+  let sumA = 0;
+  const rgb = [0, 0, 0];
+  for (const c of colors) {
+    if (!c || c[3] <= 0) continue;
+    sumA += c[3];
+    for (let k = 0; k < 3; k++) rgb[k] += c[k] * c[3];
+  }
+  if (sumA <= 0 || colors.length === 0) return undefined;
+  return [rgb[0] / sumA, rgb[1] / sumA, rgb[2] / sumA, sumA / colors.length];
+}
+
+/** Rounds a color to coarse steps so similar blends share one decoration type. */
+export function quantizeColor([r, g, b, a]: RGBA): RGBA {
+  const q = (v: number) => Math.round(v / 8) * 8;
+  return [q(r), q(g), q(b), Math.round(a * 100) / 100];
+}

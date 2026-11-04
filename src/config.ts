@@ -35,6 +35,10 @@ export interface PatinaConfig {
   foldSummary: FoldSummaryMode;
   /** Segments of the folded-block summary, with `{placeholder}`s. */
   foldSummaryFormat: string[];
+  /** While a block is folded, tint its first line with the average color of the lines in it. */
+  foldHighlight: boolean;
+  /** Template for a folded block's first-line label in the cursor-line note; `{label}` is the mark's label. */
+  foldLineLabel: string;
   showInOverviewRuler: boolean;
   highlightStyle: HighlightStyle;
   explorerEnabled: boolean;
@@ -72,6 +76,8 @@ export function readConfig(): PatinaConfig {
     showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
     foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('foldSummary.show')) ?? 'always',
     foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
+    foldHighlight: c.get<boolean>('foldSummary.highlight') ?? true,
+    foldLineLabel: c.get<string>('foldSummary.lineLabel') ?? 'Line {label}',
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
