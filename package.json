@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.16.0",
+  "version": "0.16.1",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -318,10 +318,7 @@
           "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. It replaces the first line's own end-of-line note. Blocks smaller than `#patina.fold.summaryMinLines#`, and parameter lists (see `#patina.fold.parameterLists#`), show it only while the cursor is on their first line. The text comes from `#patina.fold.summaryFormat#`."
         },
         "patina.fold.summaryFormat": {
-          "type": [
-            "array",
-            "string"
-          ],
+          "type": "array",
           "items": {
             "type": "string"
           },
