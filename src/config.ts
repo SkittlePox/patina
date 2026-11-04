@@ -16,13 +16,14 @@ const HIGHLIGHT_STYLES: HighlightStyle[] = ['background', 'gutter', 'gutterAndBa
 export type FoldSummaryMode = 'always' | 'cursorLine' | 'off';
 const FOLD_SUMMARY_MODES: FoldSummaryMode[] = ['always', 'cursorLine', 'off'];
 
-export const DEFAULT_FOLD_SUMMARY_FORMAT = [
-  'Contents: {readPercent}% read',
-  'avg {readAge} ago',
-  '{edited:line} edited, most recently {editedNewest} ago',
-  '{categories}',
-  '⚠ {stale} changed outside editor',
-];
+/** Named segments of the folded-block summary, shown in this order. */
+export const DEFAULT_FOLD_SUMMARY_FORMAT: Record<string, string> = {
+  read: 'Contents: {readPercent}% read',
+  readAge: 'avg {readAge} ago',
+  edited: '{edited:line} edited, most recently {editedNewest} ago',
+  categories: '{categories}',
+  stale: '⚠ {stale} changed outside editor',
+};
 
 export interface PatinaConfig {
   readLabel: string;
@@ -114,13 +115,16 @@ function lineNoteFormats(raw: unknown): LineNoteFormats {
   return out;
 }
 
+/**
+ * Summary segments in order: the default keys first (with the user's text where set), then any keys the user
+ * added. Empty segments are dropped.
+ */
 function foldSummaryFormat(raw: unknown): string[] {
-  if (typeof raw === 'string') return [raw];
-  if (Array.isArray(raw)) {
-    const list = raw.filter((x): x is string => typeof x === 'string');
-    if (list.length > 0) return list;
+  const merged: Record<string, string> = { ...DEFAULT_FOLD_SUMMARY_FORMAT };
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    for (const [k, v] of Object.entries(raw)) if (typeof v === 'string') merged[k] = v;
   }
-  return DEFAULT_FOLD_SUMMARY_FORMAT;
+  return Object.values(merged).filter((s) => s.trim() !== '');
 }
 
 /** Label for a specific mark: read marks created by typing use the edited label. */

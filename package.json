@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -318,21 +318,40 @@
           "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. It replaces the first line's own end-of-line note. Blocks smaller than `#patina.fold.summaryMinLines#`, and parameter lists (see `#patina.fold.parameterLists#`), show it only while the cursor is on their first line. The text comes from `#patina.fold.summaryFormat#`."
         },
         "patina.fold.summaryFormat": {
-          "type": [
-            "array",
-            "string"
-          ],
-          "items": {
+          "type": "object",
+          "default": {
+            "read": "Contents: {readPercent}% read",
+            "readAge": "avg {readAge} ago",
+            "edited": "{edited:line} edited, most recently {editedNewest} ago",
+            "categories": "{categories}",
+            "stale": "⚠ {stale} changed outside editor"
+          },
+          "properties": {
+            "read": {
+              "type": "string",
+              "description": "Read share of the block."
+            },
+            "readAge": {
+              "type": "string",
+              "description": "How long ago the block's lines were read."
+            },
+            "edited": {
+              "type": "string",
+              "description": "Lines you typed on."
+            },
+            "categories": {
+              "type": "string",
+              "description": "Counts per category."
+            },
+            "stale": {
+              "type": "string",
+              "description": "Lines changed outside the editor."
+            }
+          },
+          "additionalProperties": {
             "type": "string"
           },
-          "default": [
-            "Contents: {readPercent}% read",
-            "avg {readAge} ago",
-            "{edited:line} edited, most recently {editedNewest} ago",
-            "{categories}",
-            "⚠ {stale} changed outside editor"
-          ],
-          "markdownDescription": "Segments of the folded-block summary, joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Question, 1 Attend to next`; `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
+          "markdownDescription": "Segments of the folded-block summary, joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Question, 1 Attend to next`; `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
         },
         "patina.fold.highlight": {
           "type": "boolean",
