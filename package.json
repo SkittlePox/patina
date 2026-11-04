@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.18.3",
+  "version": "0.18.4",
   "publisher": "local",
   "icon": "media/icon.png",
   "repository": {
