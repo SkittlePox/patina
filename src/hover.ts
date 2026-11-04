@@ -28,13 +28,17 @@ export class MarkHoverProvider implements vscode.HoverProvider {
       if (m.removed) {
         const n = m.removed;
         md.appendMarkdown(
-          `\n\n$(warning) **Stale**: ${n} marked line${n === 1 ? ' was' : 's were'} deleted next to this one outside the editor. Detected ${when}.`,
+          `\n\n$(warning) **${escapeMd(cfg.staleLabel)}**: ${n} marked line${n === 1 ? ' was' : 's were'} deleted next to this one outside the editor. Detected ${when}.`,
         );
       } else {
-        md.appendMarkdown(`\n\n$(warning) **Stale**: this line changed outside the editor. Detected ${when}.`);
+        md.appendMarkdown(`\n\n$(warning) **${escapeMd(cfg.staleLabel)}**: this line changed outside the editor. Detected ${when}.`);
       }
       md.appendMarkdown('\n\n_Mark it again to clear._');
     }
     return new vscode.Hover(md, doc.lineAt(pos.line).range);
   }
+}
+
+function escapeMd(text: string): string {
+  return text.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, '\\$&');
 }

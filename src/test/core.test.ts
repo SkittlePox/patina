@@ -603,3 +603,11 @@ test('fold: innermost bracket left open at the end of a line', () => {
   assert.equal(lastUnclosedBracket('x = 1  # call('), undefined);
   assert.equal(lastUnclosedBracket('const s = `(`; // (('), undefined);
 });
+
+test('line note: stale label placeholder', () => {
+  const fm = new FileMarks();
+  fm.mark(0, 0, READ, T0, src(['a']));
+  fm.validate(src(['A']), T1);
+  const formats = { ...DEFAULT_LINE_NOTE_FORMATS, stale: '{staleLabel} {staleAge} ago' };
+  assert.equal(formatLineNote(formats, fm.get(0)!, 'Read', T1, 1, 'Changed'), 'Changed 1m ago');
+});

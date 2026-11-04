@@ -26,6 +26,8 @@ export const DEFAULT_FOLD_SUMMARY_FORMAT = [
 
 export interface PatinaConfig {
   readLabel: string;
+  editedLabel: string;
+  staleLabel: string;
   fadeMs: number;
   /** Static categories (not `read`), in settings order. */
   categories: Map<string, CategoryDef>;
@@ -79,18 +81,20 @@ export function readConfig(): PatinaConfig {
   });
   return {
     readLabel: c.get<string>('read.label') || 'Read',
+    editedLabel: c.get<string>('edited.label') || 'Edited',
+    staleLabel: c.get<string>('stale.label') || 'Stale',
     fadeMs: Math.max(0.01, c.get<number>('read.fadeDays') ?? 30) * DAY_MS,
     categories,
     colors,
-    showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
-    lineNoteFormats: lineNoteFormats(c.get<unknown>('cursorLineAnnotation.format')),
-    foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('foldSummary.show')) ?? 'always',
-    foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
-    foldHighlight: c.get<boolean>('foldSummary.highlight') ?? true,
-    foldSummaryMinLines: Math.max(1, Math.floor(c.get<number>('foldSummary.minLines') ?? 5)),
-    foldSummaryParameterLists: c.get<boolean>('foldSummary.parameterLists') ?? false,
-    showStaleAnnotations: c.get<boolean>('showStaleAnnotations') ?? false,
-    foldStaleWeight: Math.max(1, c.get<number>('foldSummary.staleWeight') ?? 10),
+    showCursorLineAnnotation: c.get<boolean>('annotations.cursorLine') ?? false,
+    lineNoteFormats: lineNoteFormats(c.get<unknown>('annotations.format')),
+    foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('fold.summary')) ?? 'always',
+    foldSummaryFormat: foldSummaryFormat(c.get<unknown>('fold.summaryFormat')),
+    foldHighlight: c.get<boolean>('fold.highlight') ?? true,
+    foldSummaryMinLines: Math.max(1, Math.floor(c.get<number>('fold.summaryMinLines') ?? 5)),
+    foldSummaryParameterLists: c.get<boolean>('fold.parameterLists') ?? false,
+    showStaleAnnotations: c.get<boolean>('annotations.staleLines') ?? false,
+    foldStaleWeight: Math.max(1, c.get<number>('fold.staleWeight') ?? 10),
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
@@ -119,9 +123,9 @@ function foldSummaryFormat(raw: unknown): string[] {
   return DEFAULT_FOLD_SUMMARY_FORMAT;
 }
 
-/** Label for a specific mark: read marks created by typing show as "Edited". */
+/** Label for a specific mark: read marks created by typing use the edited label. */
 export function markLabel(cfg: PatinaConfig, m: LineMark): string {
-  return m.cat === READ && m.edited ? 'Edited' : categoryLabel(cfg, m.cat);
+  return m.cat === READ && m.edited ? cfg.editedLabel : categoryLabel(cfg, m.cat);
 }
 
 export function categoryLabel(cfg: PatinaConfig, cat: string): string {

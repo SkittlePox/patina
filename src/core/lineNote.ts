@@ -27,13 +27,14 @@ export function lineNoteFormat(formats: LineNoteFormats, m: LineMark): NoteForma
 }
 
 /** Placeholder values for one mark. */
-export function lineNoteValues(m: LineMark, label: string, now: number, fadeMs: number): Map<string, SummaryValue> {
+export function lineNoteValues(m: LineMark, label: string, now: number, fadeMs: number, staleLabel = 'Stale'): Map<string, SummaryValue> {
   const v = new Map<string, SummaryValue>();
   v.set('label', label);
   v.set('age', shortAge(Math.max(0, now - m.t)));
   v.set('date', formatTimestamp(m.t));
   if (m.cat === READ) v.set('faded', String(Math.min(100, Math.round((Math.max(0, now - m.t) / fadeMs) * 100))));
   if (m.stale !== undefined) {
+    v.set('staleLabel', staleLabel);
     v.set('staleAge', shortAge(Math.max(0, now - m.stale)));
     v.set('staleDate', formatTimestamp(m.stale));
     v.set('removed', m.removed ?? 0);
@@ -41,7 +42,14 @@ export function lineNoteValues(m: LineMark, label: string, now: number, fadeMs: 
   return v;
 }
 
-export function formatLineNote(formats: LineNoteFormats, m: LineMark, label: string, now: number, fadeMs: number): string {
+export function formatLineNote(
+  formats: LineNoteFormats,
+  m: LineMark,
+  label: string,
+  now: number,
+  fadeMs: number,
+  staleLabel?: string,
+): string {
   const f = lineNoteFormat(formats, m);
-  return formatSummary(typeof f === 'string' ? [f] : f, lineNoteValues(m, label, now, fadeMs));
+  return formatSummary(typeof f === 'string' ? [f] : f, lineNoteValues(m, label, now, fadeMs, staleLabel));
 }

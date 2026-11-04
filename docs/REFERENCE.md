@@ -31,7 +31,7 @@ The editor's right-click menu has a **Patina** submenu with the same actions.
 - Each line holds one mark, so marking a line again replaces its mark.
 - Re-marking also clears stale state. That's how you acknowledge a change once you've reread it.
 - **Read** marks fade over `patina.read.fadeDays`. Other categories keep a fixed color.
-- Lines you type on become read, dated now. Their hover and end-of-line note say **Edited** instead of **Read**. Marking such a line explicitly turns it back into Read.
+- Lines you type on become read, dated now. Their hover and end-of-line note say **Edited** (`patina.edited.label`) instead of **Read**. Marking such a line explicitly turns it back into Read.
 - **Hover** a marked line to see its category, when it was marked and how far it has faded. If it's stale, the hover also says when the change was detected.
 - **Explorer badges:**
   - `✓` means the whole file is read.
@@ -95,14 +95,14 @@ When you fold a block, the end of its first line shows a summary of the marks in
 Contents: 60% read · avg 3h ago · 14 lines edited, most recently 1h ago · 2 Question
 ```
 
-The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
+The summary replaces the first line's own end-of-line note. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
 
-Folded parameter lists of function and method definitions are treated the same way, whatever their size. Turn on `patina.foldSummary.parameterLists` to treat them like any other block. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
+Folded parameter lists of function and method definitions are treated the same way, whatever their size. Turn on `patina.fold.parameterLists` to treat them like any other block. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.fold.summary` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
-The text comes from `patina.foldSummary.format`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
+The text comes from `patina.fold.summaryFormat`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
 ```jsonc
-"patina.foldSummary.format": [
+"patina.fold.summaryFormat": [
   "Contents: {readPercent}% read",
   "avg {readAge} ago",
   "{edited:line} edited, most recently {editedNewest} ago",
@@ -122,18 +122,18 @@ The text comes from `patina.foldSummary.format`, a list of segments joined with 
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
 
-**Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint. Each stale line counts as `patina.foldSummary.staleWeight` lines (default 10), so even a few stale lines make the folded line stand out. Turn this off with `patina.foldSummary.highlight`. Set `"editor.foldingHighlight": false` too, or the editor's own tint on folded lines covers this color.
+**Highlight:** while a block is folded, its first line takes the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color, category lines their category color, and unmarked lines nothing. So a mostly unread block gets a faint tint. Each stale line counts as `patina.fold.staleWeight` lines (default 10), so even a few stale lines make the folded line stand out. Turn this off with `patina.fold.highlight`. Set `"editor.foldingHighlight": false` too, or the editor's own tint on folded lines covers this color.
 
 Clicking the summary unfolds the block, just like clicking the editor's `⋯`.
 
 Patina detects folds from the editor's visible lines, so it updates as you fold, unfold and scroll. A block folded right at the bottom edge of the window gets its summary once the line after it scrolls into view.
 
-## Cursor-line note
+## End-of-line notes
 
-With `patina.showCursorLineAnnotation` on, the cursor line shows a faint note about its mark. Turn on `patina.showStaleAnnotations` to show the note on every stale line, wherever the cursor is. `patina.cursorLineAnnotation.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
+With `patina.annotations.cursorLine` on, the cursor line shows a faint note about its mark. Turn on `patina.annotations.staleLines` to show the note on every stale line, wherever the cursor is. `patina.annotations.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
 
 ```jsonc
-"patina.cursorLineAnnotation.format": {
+"patina.annotations.format": {
   "read": "{label} · {age} ago",
   "edited": "{label} · {age} ago",
   "stale": "⚠ changed outside editor {staleAge} ago · was {label} · {age} ago",
@@ -147,10 +147,13 @@ Each value is a string, or a list of segments joined with ` · `, using the same
 | Placeholder | |
 | --- | --- |
 | `{label}` | The mark's label, such as `Read`, `Edited` or `Question` |
+| `{staleLabel}` | `patina.stale.label` (stale only) |
 | `{age}`, `{date}` | When the line was marked (`5h`, `2026-11-04 14:30`) |
 | `{faded}` | How far a read mark has faded, in percent |
 | `{staleAge}`, `{staleDate}` | When the change outside the editor was detected (stale only) |
 | `{removed}` | Marked lines deleted next to this one outside the editor (stale only) |
+
+**Labels:** `patina.read.label`, `patina.edited.label` and `patina.stale.label` name the three built-in kinds of mark. Categories get their labels from `patina.categories`. Labels appear in notes, hovers, the explorer tooltip and the **Mark Lines As…** picker.
 
 The end-of-line note uses the theme color `patina.annotationForeground`, which you can override in `workbench.colorCustomizations`.
 
@@ -162,20 +165,22 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.highlightStyle` | `background` | `background`: tint the line. `gutter`: bar left of the line numbers. `gutterAndBackground`: both |
 | `patina.categories` | `next`, `question` | Static categories: label, optional `color` and `gutterColor` |
 | `patina.read.label` | `Read` | |
+| `patina.edited.label` | `Edited` | Label for lines read by typing on them |
 | `patina.read.fadeDays` | `30` | How long a read mark takes to fully fade |
 | `patina.read.fadeColors` | from palette | Background fade stops, evenly spaced over the fade duration |
 | `patina.read.gutterFadeColors` | from palette | Gutter fade stops |
+| `patina.stale.label` | `Stale` | Label for lines changed outside the editor |
 | `patina.stale.color` | from palette | Background for stale lines |
 | `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
-| `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
-| `patina.showStaleAnnotations` | `false` | Show the note on every stale line, not just the cursor line |
-| `patina.cursorLineAnnotation.format` | see [Cursor-line note](#cursor-line-note) | Text of that note for each kind of mark |
-| `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
-| `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
-| `patina.foldSummary.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
-| `patina.foldSummary.minLines` | `5` | Smaller folded blocks show their summary only on the cursor line |
-| `patina.foldSummary.parameterLists` | `false` | Treat folded parameter lists like other blocks instead of like small ones |
-| `patina.foldSummary.staleWeight` | `10` | How many lines each stale line counts as in the blended highlight |
+| `patina.annotations.cursorLine` | `false` | Faint end-of-line note on the cursor line |
+| `patina.annotations.staleLines` | `false` | Show the note on every stale line, not just the cursor line |
+| `patina.annotations.format` | see [End-of-line notes](#end-of-line-notes) | Text of those notes for each kind of mark |
+| `patina.fold.summary` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
+| `patina.fold.summaryFormat` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
+| `patina.fold.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
+| `patina.fold.summaryMinLines` | `5` | Smaller folded blocks show their summary only on the cursor line |
+| `patina.fold.parameterLists` | `false` | Treat folded parameter lists like other blocks instead of like small ones |
+| `patina.fold.staleWeight` | `10` | How many lines each stale line counts as in the blended highlight |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
 | `patina.exclude` | `[]` | Glob patterns for files and folders never to track |

@@ -264,7 +264,7 @@ export class DecorationRenderer implements vscode.Disposable {
     if (this.cfg.showCursorLineAnnotation && active && cursor < doc.lineCount) {
       const m = marks?.get(cursor);
       if (m) {
-        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs);
+        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs, this.cfg.staleLabel);
         if (text) notes.set(cursor, text);
       }
     }
@@ -272,7 +272,7 @@ export class DecorationRenderer implements vscode.Disposable {
       for (const [line, m] of marks.entries()) {
         if (line >= doc.lineCount) break;
         if (m.stale === undefined || notes.has(line)) continue;
-        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs);
+        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs, this.cfg.staleLabel);
         if (text) notes.set(line, text);
       }
     }

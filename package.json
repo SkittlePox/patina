@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.14.1",
+  "version": "0.15.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -231,7 +231,7 @@
         "patina.read.label": {
           "type": "string",
           "default": "Read",
-          "description": "Display label for the read category."
+          "markdownDescription": "Display label for the read category. Category labels are set in `#patina.categories#`."
         },
         "patina.read.fadeColors": {
           "type": "array",
@@ -255,6 +255,16 @@
           "default": 30,
           "description": "Days for a read mark to fade from the first to the last fade color."
         },
+        "patina.edited.label": {
+          "type": "string",
+          "default": "Edited",
+          "description": "Display label for lines read by typing on them."
+        },
+        "patina.stale.label": {
+          "type": "string",
+          "default": "Stale",
+          "markdownDescription": "Display label for stale lines (changed outside the editor), used in the hover, the explorer tooltip and the `{staleLabel}` placeholder of `#patina.annotations.format#`."
+        },
         "patina.stale.color": {
           "type": "string",
           "default": "",
@@ -265,17 +275,17 @@
           "default": "",
           "markdownDescription": "Gutter-bar color for stale marks. If empty but `#patina.stale.color#` is set, a more opaque version of it is used. Leave empty to use the palette's colors."
         },
-        "patina.showCursorLineAnnotation": {
+        "patina.annotations.cursorLine": {
           "type": "boolean",
           "default": false,
-          "description": "Show a faint end-of-line annotation with mark info on the cursor line."
+          "markdownDescription": "Show a faint end-of-line note with mark info on the cursor line. The text comes from `#patina.annotations.format#`."
         },
-        "patina.showStaleAnnotations": {
+        "patina.annotations.staleLines": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Show the end-of-line note on every stale line (changed outside the editor), not just the cursor line. The text comes from the `stale` entry of `#patina.cursorLineAnnotation.format#`."
+          "markdownDescription": "Show the end-of-line note on every stale line (changed outside the editor), not just the cursor line. The text comes from the `stale` entry of `#patina.annotations.format#`."
         },
-        "patina.cursorLineAnnotation.format": {
+        "patina.annotations.format": {
           "type": "object",
           "default": {
             "read": "{label} · {age} ago",
@@ -290,9 +300,9 @@
             "category": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines in any static category without a template of its own." }
           },
           "additionalProperties": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
-          "markdownDescription": "Text of the cursor-line note (`#patina.showCursorLineAnnotation#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question`\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised"
+          "markdownDescription": "Text of end-of-line notes (`#patina.annotations.cursorLine#`, `#patina.annotations.staleLines#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question` (see `#patina.read.label#`, `#patina.edited.label#` and `#patina.categories#`)\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleLabel}`: `#patina.stale.label#` (stale only)\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised"
         },
-        "patina.foldSummary.show": {
+        "patina.fold.summary": {
           "type": "string",
           "enum": [
             "always",
@@ -305,10 +315,13 @@
             "Never."
           ],
           "default": "always",
-          "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. It replaces the first line's own cursor-line note. Blocks smaller than `#patina.foldSummary.minLines#` are skipped. The text comes from `#patina.foldSummary.format#`."
+          "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. It replaces the first line's own end-of-line note. Blocks smaller than `#patina.fold.summaryMinLines#`, and parameter lists (see `#patina.fold.parameterLists#`), show it only while the cursor is on their first line. The text comes from `#patina.fold.summaryFormat#`."
         },
-        "patina.foldSummary.format": {
-          "type": "array",
+        "patina.fold.summaryFormat": {
+          "type": [
+            "array",
+            "string"
+          ],
           "items": {
             "type": "string"
           },
@@ -321,27 +334,27 @@
           ],
           "markdownDescription": "Segments of the folded-block summary, joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Question, 1 Attend to next`; `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`."
         },
-        "patina.foldSummary.highlight": {
+        "patina.fold.highlight": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "While a block is folded, highlight its first line with the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color (weighted by `#patina.foldSummary.staleWeight#`), category lines their category color, and unmarked lines nothing, so a mostly unread block gets a faint tint and even a few stale lines pull it toward the stale color."
+          "markdownDescription": "While a block is folded, highlight its first line with the average color of all non-blank lines in the block, the first line included. Read lines add their fade color, stale lines the stale color (weighted by `#patina.fold.staleWeight#`), category lines their category color, and unmarked lines nothing, so a mostly unread block gets a faint tint and even a few stale lines pull it toward the stale color."
         },
-        "patina.foldSummary.minLines": {
+        "patina.fold.summaryMinLines": {
           "type": "integer",
           "minimum": 1,
           "default": 5,
           "markdownDescription": "Folded blocks that hide fewer lines than this (such as a short argument list) show their summary only while the cursor is on their first line. They still get the blended highlight."
         },
-        "patina.foldSummary.parameterLists": {
+        "patina.fold.parameterLists": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Treat folded parameter lists of function and method definitions like any other block. When off, they're treated like blocks smaller than `#patina.foldSummary.minLines#`: the summary shows only while the cursor is on their first line. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line (this needs the language's extension to provide document symbols)."
+          "markdownDescription": "Treat folded parameter lists of function and method definitions like any other block. When off, they're treated like blocks smaller than `#patina.fold.summaryMinLines#`: the summary shows only while the cursor is on their first line. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line (this needs the language's extension to provide document symbols)."
         },
-        "patina.foldSummary.staleWeight": {
+        "patina.fold.staleWeight": {
           "type": "number",
           "minimum": 1,
           "default": 10,
-          "markdownDescription": "How many lines each stale line counts as in a folded block's blended highlight (`#patina.foldSummary.highlight#`), so a few stale lines make the folded line stand out. `1` weighs every line equally."
+          "markdownDescription": "How many lines each stale line counts as in a folded block's blended highlight (`#patina.fold.highlight#`), so a few stale lines make the folded line stand out. `1` weighs every line equally."
         },
         "patina.highlightStyle": {
           "type": "string",
