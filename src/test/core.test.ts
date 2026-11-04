@@ -7,7 +7,7 @@ import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
 import { compileExcludes, globToRegExp } from '../core/glob';
-import { blockStats, foldedGaps, formatSummary, summaryValues } from '../core/foldSummary';
+import { blockStats, foldedGaps, formatSummary, lastUnclosedBracket, summaryValues } from '../core/foldSummary';
 import { DEFAULT_LINE_NOTE_FORMATS, formatLineNote } from '../core/lineNote';
 
 const T0 = 1_700_000_000_000;
@@ -590,4 +590,16 @@ test('line note: custom templates, category overrides, dropped segments, hiding'
   const r = new FileMarks();
   r.mark(0, 0, READ, T0, src(lines));
   assert.equal(formatLineNote(formats, r.get(0)!, 'Read', T1, 1), '');
+});
+
+test('fold: innermost bracket left open at the end of a line', () => {
+  assert.equal(lastUnclosedBracket('def foo('), '(');
+  assert.equal(lastUnclosedBracket('    def method(self, a,'), '(');
+  assert.equal(lastUnclosedBracket('function foo<T>(a: T,'), '(');
+  assert.equal(lastUnclosedBracket('def foo(a, b):'), undefined);
+  assert.equal(lastUnclosedBracket('function foo(a) {'), '{');
+  assert.equal(lastUnclosedBracket('foo(a, [b, {'), '{');
+  assert.equal(lastUnclosedBracket('x = ")(" + f('), '(');
+  assert.equal(lastUnclosedBracket('x = 1  # call('), undefined);
+  assert.equal(lastUnclosedBracket('const s = `(`; // (('), undefined);
 });

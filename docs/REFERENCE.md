@@ -95,7 +95,9 @@ When you fold a block, the end of its first line shows a summary of the marks in
 Contents: 60% read · avg 3h ago · 14 lines edited, most recently 1h ago · 2 Question
 ```
 
-The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a folded argument list, get no summary and no blended highlight. Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
+The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a folded argument list, get no summary and no blended highlight.
+
+Folded parameter lists of function and method definitions are skipped too, whatever their size. Turn on `patina.foldSummary.parameterLists` to summarize them. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
 The text comes from `patina.foldSummary.format`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
@@ -128,7 +130,7 @@ Patina detects folds from the editor's visible lines, so it updates as you fold,
 
 ## Cursor-line note
 
-With `patina.showCursorLineAnnotation` on, the cursor line shows a faint note about its mark. `patina.cursorLineAnnotation.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
+With `patina.showCursorLineAnnotation` on, the cursor line shows a faint note about its mark. Turn on `patina.showStaleAnnotations` to show the note on every stale line, wherever the cursor is. `patina.cursorLineAnnotation.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
 
 ```jsonc
 "patina.cursorLineAnnotation.format": {
@@ -166,11 +168,13 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.stale.color` | from palette | Background for stale lines |
 | `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
+| `patina.showStaleAnnotations` | `false` | Show the note on every stale line, not just the cursor line |
 | `patina.cursorLineAnnotation.format` | see [Cursor-line note](#cursor-line-note) | Text of that note for each kind of mark |
 | `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
 | `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
 | `patina.foldSummary.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
 | `patina.foldSummary.minLines` | `5` | Smaller folded blocks get no summary or blended highlight |
+| `patina.foldSummary.parameterLists` | `false` | Also summarize folded parameter lists of function definitions |
 | `patina.foldSummary.staleWeight` | `10` | How many lines each stale line counts as in the blended highlight |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |

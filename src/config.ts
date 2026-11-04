@@ -42,6 +42,10 @@ export interface PatinaConfig {
   foldHighlight: boolean;
   /** Folded blocks hiding fewer lines than this get no summary or blended highlight. */
   foldSummaryMinLines: number;
+  /** Whether folded parameter lists of function/method definitions are summarized too. */
+  foldSummaryParameterLists: boolean;
+  /** Show the note on every stale line, not just the cursor line. */
+  showStaleAnnotations: boolean;
   /** How much more a stale line counts than other lines in a folded block's blended highlight. */
   foldStaleWeight: number;
   showInOverviewRuler: boolean;
@@ -84,6 +88,8 @@ export function readConfig(): PatinaConfig {
     foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
     foldHighlight: c.get<boolean>('foldSummary.highlight') ?? true,
     foldSummaryMinLines: Math.max(1, Math.floor(c.get<number>('foldSummary.minLines') ?? 5)),
+    foldSummaryParameterLists: c.get<boolean>('foldSummary.parameterLists') ?? false,
+    showStaleAnnotations: c.get<boolean>('showStaleAnnotations') ?? false,
     foldStaleWeight: Math.max(1, c.get<number>('foldSummary.staleWeight') ?? 10),
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',

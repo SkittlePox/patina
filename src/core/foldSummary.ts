@@ -130,3 +130,28 @@ export function foldedGaps(visible: readonly { start: number; end: number }[]): 
   }
   return gaps;
 }
+
+const OPENERS: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
+const CLOSERS = new Set(Object.values(OPENERS));
+
+/**
+ * The innermost bracket still open at the end of a line, if any: for `def f(` or `function f(a,` it's `(`,
+ * for `f(a) {` it's `{`. Skips quoted strings and stops at `//` or `#` comments (roughly).
+ */
+export function lastUnclosedBracket(line: string): string | undefined {
+  const stack: string[] = [];
+  let quote: string | undefined;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = undefined;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '#' || (ch === '/' && line[i + 1] === '/')) break;
+    else if (ch in OPENERS) stack.push(ch);
+    else if (CLOSERS.has(ch) && stack.length > 0 && OPENERS[stack[stack.length - 1]] === ch) stack.pop();
+  }
+  return stack[stack.length - 1];
+}

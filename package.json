@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -270,6 +270,11 @@
           "default": false,
           "description": "Show a faint end-of-line annotation with mark info on the cursor line."
         },
+        "patina.showStaleAnnotations": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Show the end-of-line note on every stale line (changed outside the editor), not just the cursor line. The text comes from the `stale` entry of `#patina.cursorLineAnnotation.format#`."
+        },
         "patina.cursorLineAnnotation.format": {
           "type": "object",
           "default": {
@@ -326,6 +331,11 @@
           "minimum": 1,
           "default": 5,
           "markdownDescription": "Folded blocks that hide fewer lines than this (such as a folded argument list) get no summary and no blended highlight; their first line looks and reads as it does unfolded."
+        },
+        "patina.foldSummary.parameterLists": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Summarize and highlight folded parameter lists of function and method definitions too. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line (this needs the language's extension to provide document symbols)."
         },
         "patina.foldSummary.staleWeight": {
           "type": "number",

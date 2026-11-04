@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { gutterBarSvg } from './core/gutter';
 import { hashLine } from './core/hash';
 import { averageColors, formatColor, interpolateStops, parseColor, quantizeColor, RGBA, withMinAlpha } from './core/color';
-import { blockStats, FoldedGap, foldedGaps, formatSummary, summaryValues } from './core/foldSummary';
+import { blockStats, FoldedGap, foldedGaps, formatSummary, lastUnclosedBracket, summaryValues } from './core/foldSummary';
 import { FileMarks, LineMark, LineSource, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
 import { formatLineNote } from './core/lineNote';
@@ -37,6 +37,8 @@ export class DecorationRenderer implements vscode.Disposable {
   private pending = new Set<vscode.TextEditor>();
   /** Folded blocks each editor's highlights were last drawn for. */
   private renderedGaps = new WeakMap<vscode.TextEditor, string>();
+  /** Function/method name lines per document, for recognising folded parameter lists. */
+  private symbols = new Map<string, { version: number; lines?: Set<number>; pending: boolean }>();
   private flushScheduled = false;
   private readonly timer: NodeJS.Timeout;
 
@@ -58,6 +60,7 @@ export class DecorationRenderer implements vscode.Disposable {
       vscode.window.onDidChangeVisibleTextEditors((eds) => eds.forEach((ed) => this.schedule(ed))),
       vscode.window.onDidChangeTextEditorSelection((e) => this.renderAnnotation(e.textEditor)),
       // Folding and unfolding change the visible ranges too.
+      vscode.workspace.onDidCloseTextDocument((doc) => this.symbols.delete(doc.uri.toString())),
       vscode.window.onDidChangeTextEditorVisibleRanges((e) => this.onVisibleRangesChanged(e.textEditor)),
     );
     this.timer = setInterval(() => this.renderAll(), REFRESH_MS);
@@ -145,12 +148,46 @@ export class DecorationRenderer implements vscode.Disposable {
     this.renderAnnotation(editor);
   }
 
-  /** Folded blocks currently hidden in an editor that are big enough to summarize. */
+  /** Folded blocks currently hidden in an editor that should be summarized (big enough, not a skipped parameter list). */
   private gapsOf(editor: vscode.TextEditor): FoldedGap[] {
+    const doc = editor.document;
     const min = this.cfg.foldSummaryMinLines;
     return foldedGaps(editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line }))).filter(
-      (g) => g.header < editor.document.lineCount && g.end - g.start + 1 >= min,
+      (g) =>
+        g.header < doc.lineCount &&
+        g.end - g.start + 1 >= min &&
+        (this.cfg.foldSummaryParameterLists || !this.isParameterListFold(doc, g.header)),
     );
+  }
+
+  /**
+   * Whether a fold starting at `header` is a function or method definition's parameter list: the line ends
+   * inside an open `(` and the language's symbol provider has a function, method or constructor named there.
+   */
+  private isParameterListFold(doc: vscode.TextDocument, header: number): boolean {
+    if (lastUnclosedBracket(doc.lineAt(header).text) !== '(') return false;
+    return this.definitionLines(doc)?.has(header) ?? false;
+  }
+
+  /**
+   * Lines where functions, methods and constructors are named, from the language's symbol provider. Fetched in
+   * the background and cached per document version; until a fetch finishes the previous result (if any) is used.
+   */
+  private definitionLines(doc: vscode.TextDocument): Set<number> | undefined {
+    const key = doc.uri.toString();
+    const cached = this.symbols.get(key);
+    if (cached && (cached.version === doc.version || cached.pending)) return cached.lines;
+    const version = doc.version;
+    this.symbols.set(key, { version: cached?.version ?? -1, lines: cached?.lines, pending: true });
+    const done = (lines: Set<number>) => {
+      this.symbols.set(key, { version, lines, pending: false });
+      const changed = !cached?.lines || cached.lines.size !== lines.size || [...lines].some((l) => !cached.lines!.has(l));
+      if (changed) for (const ed of vscode.window.visibleTextEditors) if (ed.document.uri.toString() === key) this.schedule(ed);
+    };
+    vscode.commands
+      .executeCommand<(vscode.DocumentSymbol | vscode.SymbolInformation)[] | undefined>('vscode.executeDocumentSymbolProvider', doc.uri)
+      .then((syms) => done(definitionNameLines(syms ?? [])), () => done(new Set()));
+    return cached?.lines;
   }
 
   private onVisibleRangesChanged(editor: vscode.TextEditor): void {
@@ -229,6 +266,14 @@ export class DecorationRenderer implements vscode.Disposable {
         if (text) notes.set(cursor, text);
       }
     }
+    if (this.cfg.showStaleAnnotations && marks) {
+      for (const [line, m] of marks.entries()) {
+        if (line >= doc.lineCount) break;
+        if (m.stale === undefined || notes.has(line)) continue;
+        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs);
+        if (text) notes.set(line, text);
+      }
+    }
     // Only files Patina tracks (those with marks); others would just say "0% read" everywhere.
     if (this.cfg.foldSummary === 'off' || !marks) return notes;
     const src: LineSource = { lineCount: doc.lineCount, lineAt: (i) => doc.lineAt(i).text };
@@ -303,4 +348,21 @@ export class DecorationRenderer implements vscode.Disposable {
       return undefined;
     }
   }
+}
+
+const DEFINITION_KINDS = new Set([vscode.SymbolKind.Function, vscode.SymbolKind.Method, vscode.SymbolKind.Constructor]);
+
+/** Name lines of every function, method and constructor in a symbol provider's result (tree or flat). */
+function definitionNameLines(syms: readonly (vscode.DocumentSymbol | vscode.SymbolInformation)[]): Set<number> {
+  const lines = new Set<number>();
+  const visit = (s: vscode.DocumentSymbol | vscode.SymbolInformation) => {
+    if ('selectionRange' in s) {
+      if (DEFINITION_KINDS.has(s.kind)) lines.add(s.selectionRange.start.line);
+      s.children?.forEach(visit);
+    } else if (DEFINITION_KINDS.has(s.kind)) {
+      lines.add(s.location.range.start.line);
+    }
+  };
+  syms.forEach(visit);
+  return lines;
 }
