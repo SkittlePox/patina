@@ -126,6 +126,30 @@ Clicking the summary unfolds the block, just like clicking the editor's `⋯`.
 
 Patina detects folds from the editor's visible lines, so it updates as you fold, unfold and scroll. A block folded right at the bottom edge of the window gets its summary once the line after it scrolls into view.
 
+## Cursor-line note
+
+With `patina.showCursorLineAnnotation` on, the cursor line shows a faint note about its mark. `patina.cursorLineAnnotation.format` sets the text for each kind of mark. Missing keys keep their defaults, and an empty string hides the note for that kind:
+
+```jsonc
+"patina.cursorLineAnnotation.format": {
+  "read": "{label} · {age} ago",
+  "edited": "{label} · {age} ago",
+  "stale": "⚠ changed outside editor {staleAge} ago · was {label} · {age} ago",
+  "category": "{label} · {age} ago",
+  "question": "❓ {date}"   // a category id gives that category its own text
+}
+```
+
+Each value is a string, or a list of segments joined with ` · `, using the same rules as the folded-block summary. A segment is left out when any placeholder in it has nothing to report. For example, `["⚠ changed {staleAge} ago", "{removed:line} deleted nearby"]` mentions deleted lines only when there are some.
+
+| Placeholder | |
+| --- | --- |
+| `{label}` | The mark's label, such as `Read`, `Edited` or `Question` |
+| `{age}`, `{date}` | When the line was marked (`5h`, `2026-11-04 14:30`) |
+| `{faded}` | How far a read mark has faded, in percent |
+| `{staleAge}`, `{staleDate}` | When the change outside the editor was detected (stale only) |
+| `{removed}` | Marked lines deleted next to this one outside the editor (stale only) |
+
 The end-of-line note uses the theme color `patina.annotationForeground`, which you can override in `workbench.colorCustomizations`.
 
 ## Settings
@@ -142,6 +166,7 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.stale.color` | from palette | Background for stale lines |
 | `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
+| `patina.cursorLineAnnotation.format` | see [Cursor-line note](#cursor-line-note) | Text of that note for each kind of mark |
 | `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
 | `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
 | `patina.foldSummary.highlight` | `true` | Tint a folded block's first line with the average color of its lines |

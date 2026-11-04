@@ -8,6 +8,7 @@ import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
 import { compileExcludes, globToRegExp } from '../core/glob';
 import { blockStats, foldedGaps, formatSummary, summaryValues } from '../core/foldSummary';
+import { DEFAULT_LINE_NOTE_FORMATS, formatLineNote } from '../core/lineNote';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -560,4 +561,33 @@ test('fold highlight: weights let a few stale lines dominate', () => {
   // An unmarked block with one stale line: the stale weight also raises the opacity.
   const sparse = averageColors([undefined, undefined, undefined, red], [1, 1, 1, 10])!;
   assert.equal(Math.round(sparse[3] * 1000) / 1000, Math.round((0.2 * 10 / 13) * 1000) / 1000);
+});
+
+test('line note: default text per kind of mark', () => {
+  const H = 3_600_000;
+  const lines = ['a', 'b', 'c'];
+  const fm = new FileMarks();
+  fm.mark(0, 1, READ, T1 - 24 * H, src(lines));
+  fm.markTyped(2, 2, T1 - 2 * H, src(lines));
+  const read = fm.get(0)!;
+  assert.equal(formatLineNote(DEFAULT_LINE_NOTE_FORMATS, read, 'Read', T1, 30 * 24 * H), 'Read · 1d ago');
+  assert.equal(formatLineNote(DEFAULT_LINE_NOTE_FORMATS, fm.get(2)!, 'Edited', T1, 30 * 24 * H), 'Edited · 2h ago');
+  fm.validate(src(['a', 'B', 'c']), T1 - 5 * H);
+  assert.equal(
+    formatLineNote(DEFAULT_LINE_NOTE_FORMATS, fm.get(1)!, 'Read', T1, 30 * 24 * H),
+    '⚠ changed outside editor 5h ago · was Read · 1d ago',
+  );
+});
+
+test('line note: custom templates, category overrides, dropped segments, hiding', () => {
+  const lines = ['a', 'b'];
+  const fm = new FileMarks();
+  fm.mark(0, 0, 'question', T0, src(lines));
+  fm.mark(1, 1, 'next', T0, src(lines));
+  const formats = { ...DEFAULT_LINE_NOTE_FORMATS, category: 'cat {label}', question: ['❓ {age}', '{removed:line} gone'], read: '' };
+  assert.equal(formatLineNote(formats, fm.get(0)!, 'Question', T1, 1), '❓ 1d');
+  assert.equal(formatLineNote(formats, fm.get(1)!, 'Next', T1, 1), 'cat Next');
+  const r = new FileMarks();
+  r.mark(0, 0, READ, T0, src(lines));
+  assert.equal(formatLineNote(formats, r.get(0)!, 'Read', T1, 1), '');
 });

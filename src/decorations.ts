@@ -7,7 +7,7 @@ import { averageColors, formatColor, interpolateStops, parseColor, quantizeColor
 import { blockStats, FoldedGap, foldedGaps, formatSummary, summaryValues } from './core/foldSummary';
 import { FileMarks, LineMark, LineSource, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
-import { shortAge } from './core/time';
+import { formatLineNote } from './core/lineNote';
 import { categoryLabel, FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
@@ -225,9 +225,8 @@ export class DecorationRenderer implements vscode.Disposable {
     if (this.cfg.showCursorLineAnnotation && active && cursor < doc.lineCount) {
       const m = marks?.get(cursor);
       if (m) {
-        let text = `${markLabel(this.cfg, m)} · ${shortAge(now - m.t)} ago`;
-        if (m.stale !== undefined) text = `⚠ changed outside editor ${shortAge(now - m.stale)} ago · was ${text}`;
-        notes.set(cursor, text);
+        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs);
+        if (text) notes.set(cursor, text);
       }
     }
     // Only files Patina tracks (those with marks); others would just say "0% read" everywhere.

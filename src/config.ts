@@ -3,6 +3,7 @@ import { LineMark, READ } from './core/marks';
 import { compileExcludes } from './core/glob';
 import { DEFAULT_PALETTE, PALETTES, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
+import { DEFAULT_LINE_NOTE_FORMATS, LineNoteFormats } from './core/lineNote';
 
 export interface CategoryDef {
   id: string;
@@ -31,6 +32,8 @@ export interface PatinaConfig {
   /** Final background and gutter colors: palette plus any overrides. */
   colors: ResolvedColors;
   showCursorLineAnnotation: boolean;
+  /** Templates for the cursor-line note, by kind of mark. */
+  lineNoteFormats: LineNoteFormats;
   /** Where to show a summary of a folded block's marks at the end of its first line. */
   foldSummary: FoldSummaryMode;
   /** Segments of the folded-block summary, with `{placeholder}`s. */
@@ -76,6 +79,7 @@ export function readConfig(): PatinaConfig {
     categories,
     colors,
     showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
+    lineNoteFormats: lineNoteFormats(c.get<unknown>('cursorLineAnnotation.format')),
     foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('foldSummary.show')) ?? 'always',
     foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
     foldHighlight: c.get<boolean>('foldSummary.highlight') ?? true,
@@ -87,6 +91,17 @@ export function readConfig(): PatinaConfig {
     storageFile: c.get<string>('storageFile') || '.vscode/patina.json',
     isExcluded: compileExcludes(c.get<string[]>('exclude') ?? []),
   };
+}
+
+/** User templates on top of the defaults; anything that isn't a string or list of strings is ignored. */
+function lineNoteFormats(raw: unknown): LineNoteFormats {
+  const out: LineNoteFormats = { ...DEFAULT_LINE_NOTE_FORMATS };
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw)) {
+    if (typeof v === 'string') out[k] = v;
+    else if (Array.isArray(v)) out[k] = v.filter((x): x is string => typeof x === 'string');
+  }
+  return out;
 }
 
 function foldSummaryFormat(raw: unknown): string[] {

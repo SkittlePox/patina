@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -269,6 +269,23 @@
           "type": "boolean",
           "default": false,
           "description": "Show a faint end-of-line annotation with mark info on the cursor line."
+        },
+        "patina.cursorLineAnnotation.format": {
+          "type": "object",
+          "default": {
+            "read": "{label} · {age} ago",
+            "edited": "{label} · {age} ago",
+            "stale": "⚠ changed outside editor {staleAge} ago · was {label} · {age} ago",
+            "category": "{label} · {age} ago"
+          },
+          "properties": {
+            "read": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines marked as read." },
+            "edited": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines read by typing on them." },
+            "stale": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines changed outside the editor." },
+            "category": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines in any static category without a template of its own." }
+          },
+          "additionalProperties": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+          "markdownDescription": "Text of the cursor-line note (`#patina.showCursorLineAnnotation#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question`\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised"
         },
         "patina.foldSummary.show": {
           "type": "string",
