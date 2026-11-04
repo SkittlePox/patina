@@ -7,6 +7,7 @@ import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
 import { compileExcludes, globToRegExp } from '../core/glob';
+import { blockStats, foldedGaps, formatSummary, summaryValues } from '../core/foldSummary';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -474,4 +475,63 @@ test('exclude globs', () => {
   assert.ok(!ex('src/main.ts'));
   assert.ok(!compileExcludes([])('anything'));
   assert.ok(globToRegExp('./a.b/*.ts').test('a.b/x.ts') && !globToRegExp('a.b/*.ts').test('axb/x.ts'));
+});
+
+test('fold summary: block stats and default-style formatting', () => {
+  const H = 3_600_000;
+  const lines = ['f() {', 'a', 'b', '', 'c', 'd', 'e', '}'];
+  const fm = new FileMarks();
+  const s = src(lines);
+  fm.mark(1, 3, READ, T1 - 5 * H, s); // a, b, blank (blank doesn't count)
+  fm.markTyped(4, 4, T1 - 1 * H, s); // c: edited
+  fm.mark(5, 5, 'question', T1, s); // d
+  const stats = blockStats(fm, s, 1, 6, T1);
+  assert.equal(stats.lines, 5);
+  assert.equal(stats.read, 3);
+  assert.equal(stats.edited, 1);
+  assert.equal(stats.categories.get('question'), 1);
+  const values = summaryValues(stats, (c) => (c === 'question' ? 'Question' : c), ['next', 'question']);
+  assert.equal(values.get('readPercent'), '60');
+  assert.equal(values.get('readAge'), '3h'); // (5 + 5 + 1) / 3 = 3.67h
+  assert.equal(values.get('editedNewest'), '1h');
+  assert.equal(
+    formatSummary(
+      ['Contents: {readPercent}% read', 'read on average {readAge} ago', '{edited:line} edited, most recently {editedNewest} ago', '{categories}', '⚠ {stale} stale'],
+      values,
+    ),
+    'Contents: 60% read · read on average 3h ago · 1 line edited, most recently 1h ago · 1 Question',
+  );
+});
+
+test('fold summary: segments with nothing to report are dropped; 0% still shows', () => {
+  const s = src(['x', 'y']);
+  const values = summaryValues(blockStats(undefined, s, 0, 1, T0), (c) => c, []);
+  assert.equal(formatSummary(['{readPercent}% read', 'avg {readAge}', '{edited:line} edited', '{cat.question} Q', '{categories}'], values), '0% read');
+  assert.equal(formatSummary(['{unread:line} unread', '{nope}'], values), '2 lines unread');
+});
+
+test('fold summary: stale marks count as stale, not read', () => {
+  const lines = ['a', 'b', 'c'];
+  const fm = new FileMarks();
+  fm.mark(0, 2, READ, T0, src(lines));
+  fm.validate(src(['a', 'B', 'c']), T1);
+  const stats = blockStats(fm, src(['a', 'B', 'c']), 0, 2, T1);
+  assert.equal(stats.stale, 1);
+  assert.equal(stats.read, 2);
+});
+
+test('fold summary: folded gaps from visible ranges', () => {
+  assert.deepEqual(foldedGaps([{ start: 0, end: 10 }]), []);
+  assert.deepEqual(
+    foldedGaps([
+      { start: 20, end: 30 },
+      { start: 0, end: 4 },
+      { start: 9, end: 15 },
+    ]),
+    [
+      { header: 4, start: 5, end: 8 },
+      { header: 15, start: 16, end: 19 },
+    ],
+  );
+  assert.deepEqual(foldedGaps([{ start: 0, end: 4 }, { start: 5, end: 9 }]), []);
 });

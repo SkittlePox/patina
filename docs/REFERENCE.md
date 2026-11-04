@@ -87,6 +87,41 @@ Categories without colors take them from the palette. Custom categories get the 
 
 **Gutter bar placement:** the bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
+## Folded blocks
+
+When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
+
+```
+Contents: 60% read · read on average 3h ago · 14 lines edited, most recently 1h ago · 2 Question
+```
+
+On the cursor line it follows the line's own note (if `patina.showCursorLineAnnotation` is on). Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
+
+The text comes from `patina.foldSummary.format`, a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
+
+```jsonc
+"patina.foldSummary.format": [
+  "Contents: {readPercent}% read",
+  "read on average {readAge} ago",
+  "{edited:line} edited, most recently {editedNewest} ago",
+  "{categories}",
+  "⚠ {stale} changed outside editor"
+]
+```
+
+| Placeholder | |
+| --- | --- |
+| `{lines}`, `{read}`, `{unread}`, `{readPercent}` | Non-blank lines, read lines (including lines you typed on), unread lines, read percentage |
+| `{readAge}`, `{readNewest}`, `{readOldest}` | Average, most recent and oldest read age (`5m`, `3h`, `2d`) |
+| `{edited}`, `{editedAge}`, `{editedNewest}` | Lines you typed on, their average and most recent age |
+| `{stale}`, `{staleNewest}` | Lines changed outside the editor, most recent detection age |
+| `{categories}` | Per-category counts, such as `2 Question, 1 Attend to next` |
+| `{cat.<id>}` | Count for one category, such as `{cat.question}` |
+
+`{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
+
+Patina detects folds from the editor's visible lines, so it updates as you fold, unfold and scroll. A block folded right at the bottom edge of the window gets its summary once the line after it scrolls into view.
+
 The end-of-line note uses the theme color `patina.annotationForeground`, which you can override in `workbench.colorCustomizations`.
 
 ## Settings
@@ -103,6 +138,8 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.stale.color` | from palette | Background for stale lines |
 | `patina.stale.gutterColor` | from palette | Gutter bar for stale lines |
 | `patina.showCursorLineAnnotation` | `false` | Faint end-of-line note on the cursor line |
+| `patina.foldSummary.show` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
+| `patina.foldSummary.format` | see [Folded blocks](#folded-blocks) | Segments of that summary, with placeholders |
 | `patina.showInOverviewRuler` | `true` | Show marks in the scrollbar |
 | `patina.explorer.enabled` | `true` | |
 | `patina.exclude` | `[]` | Glob patterns for files and folders never to track |

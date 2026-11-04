@@ -12,6 +12,17 @@ export interface CategoryDef {
 export type HighlightStyle = 'background' | 'gutter' | 'gutterAndBackground';
 const HIGHLIGHT_STYLES: HighlightStyle[] = ['background', 'gutter', 'gutterAndBackground'];
 
+export type FoldSummaryMode = 'always' | 'cursorLine' | 'off';
+const FOLD_SUMMARY_MODES: FoldSummaryMode[] = ['always', 'cursorLine', 'off'];
+
+export const DEFAULT_FOLD_SUMMARY_FORMAT = [
+  'Contents: {readPercent}% read',
+  'read on average {readAge} ago',
+  '{edited:line} edited, most recently {editedNewest} ago',
+  '{categories}',
+  '⚠ {stale} changed outside editor',
+];
+
 export interface PatinaConfig {
   readLabel: string;
   fadeMs: number;
@@ -20,6 +31,10 @@ export interface PatinaConfig {
   /** Final background and gutter colors: palette plus any overrides. */
   colors: ResolvedColors;
   showCursorLineAnnotation: boolean;
+  /** Where to show a summary of a folded block's marks at the end of its first line. */
+  foldSummary: FoldSummaryMode;
+  /** Segments of the folded-block summary, with `{placeholder}`s. */
+  foldSummaryFormat: string[];
   showInOverviewRuler: boolean;
   highlightStyle: HighlightStyle;
   explorerEnabled: boolean;
@@ -55,12 +70,23 @@ export function readConfig(): PatinaConfig {
     categories,
     colors,
     showCursorLineAnnotation: c.get<boolean>('showCursorLineAnnotation') ?? false,
+    foldSummary: FOLD_SUMMARY_MODES.find((m) => m === c.get<string>('foldSummary.show')) ?? 'always',
+    foldSummaryFormat: foldSummaryFormat(c.get<unknown>('foldSummary.format')),
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
     explorerEnabled: c.get<boolean>('explorer.enabled') ?? true,
     storageFile: c.get<string>('storageFile') || '.vscode/patina.json',
     isExcluded: compileExcludes(c.get<string[]>('exclude') ?? []),
   };
+}
+
+function foldSummaryFormat(raw: unknown): string[] {
+  if (typeof raw === 'string') return [raw];
+  if (Array.isArray(raw)) {
+    const list = raw.filter((x): x is string => typeof x === 'string');
+    if (list.length > 0) return list;
+  }
+  return DEFAULT_FOLD_SUMMARY_FORMAT;
 }
 
 /** Label for a specific mark: read marks created by typing show as "Edited". */

@@ -270,6 +270,35 @@
           "default": false,
           "description": "Show a faint end-of-line annotation with mark info on the cursor line."
         },
+        "patina.foldSummary.show": {
+          "type": "string",
+          "enum": [
+            "always",
+            "cursorLine",
+            "off"
+          ],
+          "enumDescriptions": [
+            "On the first line of every folded block.",
+            "Only when the cursor is on the first line of a folded block.",
+            "Never."
+          ],
+          "default": "always",
+          "markdownDescription": "Show a faint end-of-line summary of the marks inside a folded block (how much is read, edited, stale or in each category) on the block's first line. On the cursor line it follows the line's own note when `#patina.showCursorLineAnnotation#` is on. The text comes from `#patina.foldSummary.format#`."
+        },
+        "patina.foldSummary.format": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "Contents: {readPercent}% read",
+            "read on average {readAge} ago",
+            "{edited:line} edited, most recently {editedNewest} ago",
+            "{categories}",
+            "⚠ {stale} changed outside editor"
+          ],
+          "markdownDescription": "Segments of the folded-block summary, joined with ` · `. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Question, 1 Attend to next`; `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`."
+        },
         "patina.highlightStyle": {
           "type": "string",
           "enum": [

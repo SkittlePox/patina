@@ -13,6 +13,7 @@ let store: MarkStore | undefined;
 export interface PatinaApi {
   store: MarkStore;
   tracker: ChangeTracker;
+  renderer: DecorationRenderer;
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<PatinaApi> {
@@ -62,7 +63,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
   const r = await tracker.validateAll('changed while editor was closed');
   log.appendLine(`Validated ${r.files} file(s); ${r.stale} line(s) newly stale.`);
   renderer.renderAll();
-  return { store, tracker };
+  return { store, tracker, renderer };
 }
 
 export async function deactivate(): Promise<void> {

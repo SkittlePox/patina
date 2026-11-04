@@ -4,10 +4,11 @@ import * as vscode from 'vscode';
 import { gutterBarSvg } from './core/gutter';
 import { hashLine } from './core/hash';
 import { formatColor, interpolateStops, parseColor, RGBA, withMinAlpha } from './core/color';
-import { LineMark, READ } from './core/marks';
+import { blockStats, foldedGaps, formatSummary, summaryValues } from './core/foldSummary';
+import { LineMark, LineSource, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
 import { shortAge } from './core/time';
-import { FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
+import { categoryLabel, FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
 
@@ -50,6 +51,8 @@ export class DecorationRenderer implements vscode.Disposable {
       }),
       vscode.window.onDidChangeVisibleTextEditors((eds) => eds.forEach((ed) => this.schedule(ed))),
       vscode.window.onDidChangeTextEditorSelection((e) => this.renderAnnotation(e.textEditor)),
+      // Folding and unfolding change the visible ranges too.
+      vscode.window.onDidChangeTextEditorVisibleRanges((e) => this.renderAnnotation(e.textEditor)),
     );
     this.timer = setInterval(() => this.renderAll(), REFRESH_MS);
   }
@@ -120,23 +123,47 @@ export class DecorationRenderer implements vscode.Disposable {
   }
 
   private renderAnnotation(editor: vscode.TextEditor): void {
-    if (!this.cfg.showCursorLineAnnotation || editor !== vscode.window.activeTextEditor) {
-      editor.setDecorations(this.annotationType, []);
-      return;
-    }
-    const line = editor.selection.active.line;
-    const m = this.store.get(editor.document.uri)?.get(line);
-    if (!m || line >= editor.document.lineCount) {
-      editor.setDecorations(this.annotationType, []);
-      return;
-    }
+    const notes = this.annotations(editor);
+    editor.setDecorations(
+      this.annotationType,
+      [...notes].map(([line, text]) => {
+        const end = editor.document.lineAt(line).range.end;
+        return { range: new vscode.Range(end, end), renderOptions: { after: { contentText: text } } };
+      }),
+    );
+  }
+
+  /** End-of-line notes by line: the cursor line's mark, and summaries of folded blocks on their first lines. */
+  annotations(editor: vscode.TextEditor): Map<number, string> {
+    const notes = new Map<number, string>();
+    const doc = editor.document;
+    const marks = this.store.get(doc.uri);
     const now = Date.now();
-    let text = `${markLabel(this.cfg, m)} · ${shortAge(now - m.t)} ago`;
-    if (m.stale !== undefined) text = `⚠ changed outside editor ${shortAge(now - m.stale)} ago · was ${text}`;
-    const end = editor.document.lineAt(line).range.end;
-    editor.setDecorations(this.annotationType, [
-      { range: new vscode.Range(end, end), renderOptions: { after: { contentText: text } } },
-    ]);
+    const active = editor === vscode.window.activeTextEditor;
+    const cursor = editor.selection.active.line;
+    if (this.cfg.showCursorLineAnnotation && active && cursor < doc.lineCount) {
+      const m = marks?.get(cursor);
+      if (m) {
+        let text = `${markLabel(this.cfg, m)} · ${shortAge(now - m.t)} ago`;
+        if (m.stale !== undefined) text = `⚠ changed outside editor ${shortAge(now - m.stale)} ago · was ${text}`;
+        notes.set(cursor, text);
+      }
+    }
+    // Only files Patina tracks (those with marks); others would just say "0% read" everywhere.
+    if (this.cfg.foldSummary === 'off' || !marks) return notes;
+    const visible = editor.visibleRanges.map((r) => ({ start: r.start.line, end: r.end.line }));
+    const src: LineSource = { lineCount: doc.lineCount, lineAt: (i) => doc.lineAt(i).text };
+    const order = [...this.cfg.categories.keys()];
+    for (const gap of foldedGaps(visible)) {
+      if (gap.header >= doc.lineCount) continue;
+      if (this.cfg.foldSummary === 'cursorLine' && !(active && gap.header === cursor)) continue;
+      const stats = blockStats(marks, src, gap.start, gap.end, now);
+      const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c) => categoryLabel(this.cfg, c), order));
+      if (!text) continue;
+      const own = notes.get(gap.header);
+      notes.set(gap.header, own ? `${own} · ${text}` : text);
+    }
+    return notes;
   }
 
   private styleKey(m: LineMark, now: number): string {

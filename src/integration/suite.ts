@@ -142,6 +142,25 @@ export async function run(): Promise<void> {
     assert.deepEqual([...(b?.entries() ?? [])].map(([l]) => l), [0, 1, 2]);
     assert.equal(api.store.stats(vscode.Uri.joinPath(ws, 'sub', 'b.txt'))?.read, 2);
   });
+
+  await step('folded block shows a summary of its contents', async () => {
+    const f = vscode.Uri.joinPath(ws, 'fold.txt');
+    fs.writeFileSync(f.fsPath, ['block:', '  one', '  two', '  three', '  four', '  five', 'after'].join('\n') + '\n');
+    const d = await vscode.workspace.openTextDocument(f);
+    const ed = await vscode.window.showTextDocument(d);
+    ed.selection = new vscode.Selection(1, 0, 3, 5);
+    await vscode.commands.executeCommand('patina.markRead');
+    ed.selection = new vscode.Selection(4, 0, 4, 0);
+    await vscode.commands.executeCommand('patina.markQuestion');
+    ed.selection = new vscode.Selection(0, 0, 0, 0);
+    await vscode.commands.executeCommand('editor.fold', { selectionLines: [0] });
+    await waitFor(() => ed.visibleRanges.length > 1, 'fold to split visible ranges');
+    const note = api.renderer.annotations(ed).get(0);
+    assert.equal(note, 'Contents: 60% read · read on average 1m ago · 1 Question');
+    await vscode.commands.executeCommand('editor.unfold', { selectionLines: [0] });
+    await waitFor(() => ed.visibleRanges.length === 1, 'unfold');
+    assert.equal(api.renderer.annotations(ed).get(0), undefined);
+  });
 }
 
 function sleep(ms: number) {
