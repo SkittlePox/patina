@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -330,12 +330,12 @@
           "type": "integer",
           "minimum": 1,
           "default": 5,
-          "markdownDescription": "Folded blocks that hide fewer lines than this (such as a short argument list) show their summary only while the cursor is on their first line, and keep that line's normal highlight instead of the blended one."
+          "markdownDescription": "Folded blocks that hide fewer lines than this (such as a short argument list) show their summary only while the cursor is on their first line. They still get the blended highlight."
         },
         "patina.foldSummary.parameterLists": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Treat folded parameter lists of function and method definitions like any other block. When off, they're treated like blocks smaller than `#patina.foldSummary.minLines#`: the summary shows only while the cursor is on their first line, and there's no blended highlight. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line (this needs the language's extension to provide document symbols)."
+          "markdownDescription": "Treat folded parameter lists of function and method definitions like any other block. When off, they're treated like blocks smaller than `#patina.foldSummary.minLines#`: the summary shows only while the cursor is on their first line. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line (this needs the language's extension to provide document symbols)."
         },
         "patina.foldSummary.staleWeight": {
           "type": "number",

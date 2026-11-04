@@ -40,7 +40,7 @@ export interface PatinaConfig {
   foldSummaryFormat: string[];
   /** While a block is folded, tint its first line with the average color of the lines in it. */
   foldHighlight: boolean;
-  /** Folded blocks hiding fewer lines than this show their summary only on the cursor line, and get no blended highlight. */
+  /** Folded blocks hiding fewer lines than this show their summary only on the cursor line. */
   foldSummaryMinLines: number;
   /** Whether folded parameter lists of function/method definitions are treated like other blocks (else like small ones). */
   foldSummaryParameterLists: boolean;

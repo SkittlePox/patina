@@ -18,7 +18,7 @@ const REFRESH_MS = 10 * 60 * 1000;
 /** Folded-block highlight colors kept as decoration types before unused ones are dropped. */
 const MAX_FOLD_TYPES = 100;
 
-const gapSignature = (gaps: (FoldedGap & { minor: boolean })[]) => gaps.map((g) => `${g.header}-${g.end}${g.minor ? 'm' : ''}`).join(',');
+const gapSignature = (gaps: FoldedGap[]) => gaps.map((g) => `${g.header}-${g.end}`).join(',');
 
 /** Renders line highlights (background tint and/or gutter bar), overview ruler marks and the optional cursor-line annotation. */
 export class DecorationRenderer implements vscode.Disposable {
@@ -116,7 +116,6 @@ export class DecorationRenderer implements vscode.Disposable {
       }
       if (this.cfg.foldHighlight) {
         for (const gap of gaps) {
-          if (gap.minor) continue;
           const key = this.foldKey(marks, doc, gap.header, gap.end, now);
           if (key) keyed.set(gap.header, key);
           else keyed.delete(gap.header);
@@ -150,7 +149,7 @@ export class DecorationRenderer implements vscode.Disposable {
 
   /**
    * Folded blocks currently hidden in an editor. Minor ones (smaller than the minimum, or parameter lists unless
-   * those are summarized in full) get no blended highlight and show their summary only on the cursor line.
+   * those are summarized in full) show their summary only on the cursor line.
    */
   private gapsOf(editor: vscode.TextEditor): (FoldedGap & { minor: boolean })[] {
     const doc = editor.document;
