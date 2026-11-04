@@ -92,14 +92,14 @@ Categories without colors take them from the palette. Custom categories get the 
 When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
 
 ```
-Contents 60% read · avg 3h ago · 2 Question · ⚠ 1 line changed outside editor
+Contents 60% read · avg 3h ago · 2 Question · ⚠ 1 line changed outside editor · most recently 2h ago
 ```
 
 The summary replaces the first line's own end-of-line note. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
 
 Folded parameter lists of function and method definitions are treated the same way, whatever their size. Turn on `patina.fold.parameterLists` to treat them like any other block. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.fold.summary` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
-The text comes from `patina.fold.summaryFormat`, a set of named segments joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is also left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
+The text comes from `patina.fold.summaryFormat`, a set of named segments joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is also left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
 ```jsonc
 "patina.fold.summaryFormat": {
@@ -107,7 +107,8 @@ The text comes from `patina.fold.summaryFormat`, a set of named segments joined 
   "readAge": "avg {readAge} ago",
   "edited": "",   // hidden by default; e.g. "{edited:line} edited, most recently {editedNewest} ago"
   "categories": "{categories}",
-  "stale": "⚠ {stale:line} changed outside editor"
+  "stale": "⚠ {stale:line} changed outside editor",
+  "staleAge": "most recently {staleNewest} ago"
 }
 ```
 

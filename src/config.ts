@@ -23,6 +23,7 @@ export const DEFAULT_FOLD_SUMMARY_FORMAT: Record<string, string> = {
   edited: '',
   categories: '{categories}',
   stale: '⚠ {stale:line} changed outside editor',
+  staleAge: 'most recently {staleNewest} ago',
 };
 
 export interface PatinaConfig {
