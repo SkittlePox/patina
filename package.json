@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -291,7 +291,7 @@
         "patina.explorer.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Show read coverage, freshness and stale flags in the file explorer."
+          "description": "Show ✓ on fully read files and ! on files with stale lines in the file explorer."
         },
         "patina.exclude": {
           "type": "array",
@@ -309,166 +309,6 @@
       }
     },
     "colors": [
-      {
-        "id": "patina.explorerFresh",
-        "description": "Explorer color for recently read files.",
-        "defaults": {
-          "dark": "#4fbf6a",
-          "light": "#2e8b45",
-          "highContrast": "#4fbf6a",
-          "highContrastLight": "#2e8b45"
-        }
-      },
-      {
-        "id": "patina.explorerAging",
-        "description": "Explorer color for files read a while ago.",
-        "defaults": {
-          "dark": "#c8b040",
-          "light": "#9a8420",
-          "highContrast": "#c8b040",
-          "highContrastLight": "#9a8420"
-        }
-      },
-      {
-        "id": "patina.explorerOld",
-        "description": "Explorer color for files whose read marks have fully faded.",
-        "defaults": {
-          "dark": "#8a8a8a",
-          "light": "#707070",
-          "highContrast": "#8a8a8a",
-          "highContrastLight": "#707070"
-        }
-      },
-      {
-        "id": "patina.explorerStale",
-        "description": "Explorer color for files with stale marks.",
-        "defaults": {
-          "dark": "#e05252",
-          "light": "#c62828",
-          "highContrast": "#e05252",
-          "highContrastLight": "#c62828"
-        }
-      },
-      {
-        "id": "patina.muted.explorerFresh",
-        "description": "Explorer color for recently read files (muted palette).",
-        "defaults": {
-          "dark": "#8aa88a",
-          "light": "#5f8a5f",
-          "highContrast": "#8aa88a",
-          "highContrastLight": "#5f8a5f"
-        }
-      },
-      {
-        "id": "patina.muted.explorerAging",
-        "description": "Explorer color for files read a while ago (muted palette).",
-        "defaults": {
-          "dark": "#b0a682",
-          "light": "#857a52",
-          "highContrast": "#b0a682",
-          "highContrastLight": "#857a52"
-        }
-      },
-      {
-        "id": "patina.muted.explorerOld",
-        "description": "Explorer color for files whose read marks have fully faded (muted palette).",
-        "defaults": {
-          "dark": "#808080",
-          "light": "#8a8a8a",
-          "highContrast": "#808080",
-          "highContrastLight": "#8a8a8a"
-        }
-      },
-      {
-        "id": "patina.muted.explorerStale",
-        "description": "Explorer color for files with stale marks (muted palette).",
-        "defaults": {
-          "dark": "#b88080",
-          "light": "#9e6262",
-          "highContrast": "#b88080",
-          "highContrastLight": "#9e6262"
-        }
-      },
-      {
-        "id": "patina.vivid.explorerFresh",
-        "description": "Explorer color for recently read files (vivid palette).",
-        "defaults": {
-          "dark": "#1ed760",
-          "light": "#00893a",
-          "highContrast": "#1ed760",
-          "highContrastLight": "#00893a"
-        }
-      },
-      {
-        "id": "patina.vivid.explorerAging",
-        "description": "Explorer color for files read a while ago (vivid palette).",
-        "defaults": {
-          "dark": "#ffc400",
-          "light": "#b08600",
-          "highContrast": "#ffc400",
-          "highContrastLight": "#b08600"
-        }
-      },
-      {
-        "id": "patina.vivid.explorerOld",
-        "description": "Explorer color for files whose read marks have fully faded (vivid palette).",
-        "defaults": {
-          "dark": "#9a9a9a",
-          "light": "#666666",
-          "highContrast": "#9a9a9a",
-          "highContrastLight": "#666666"
-        }
-      },
-      {
-        "id": "patina.vivid.explorerStale",
-        "description": "Explorer color for files with stale marks (vivid palette).",
-        "defaults": {
-          "dark": "#ff4545",
-          "light": "#d10000",
-          "highContrast": "#ff4545",
-          "highContrastLight": "#d10000"
-        }
-      },
-      {
-        "id": "patina.colorblind.explorerFresh",
-        "description": "Explorer color for recently read files (colorblind palette).",
-        "defaults": {
-          "dark": "#3d9bd6",
-          "light": "#0072b2",
-          "highContrast": "#3d9bd6",
-          "highContrastLight": "#0072b2"
-        }
-      },
-      {
-        "id": "patina.colorblind.explorerAging",
-        "description": "Explorer color for files read a while ago (colorblind palette).",
-        "defaults": {
-          "dark": "#7cc3ec",
-          "light": "#2f86b8",
-          "highContrast": "#7cc3ec",
-          "highContrastLight": "#2f86b8"
-        }
-      },
-      {
-        "id": "patina.colorblind.explorerOld",
-        "description": "Explorer color for files whose read marks have fully faded (colorblind palette).",
-        "defaults": {
-          "dark": "#8a8a8a",
-          "light": "#707070",
-          "highContrast": "#8a8a8a",
-          "highContrastLight": "#707070"
-        }
-      },
-      {
-        "id": "patina.colorblind.explorerStale",
-        "description": "Explorer color for files with stale marks (colorblind palette).",
-        "defaults": {
-          "dark": "#e07b33",
-          "light": "#c25500",
-          "highContrast": "#e07b33",
-          "highContrastLight": "#c25500"
-        }
-      },
       {
         "id": "patina.annotationForeground",
         "description": "End-of-line annotation text color.",

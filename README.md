@@ -35,12 +35,12 @@ You can exclude logs, build output and other generated files so they're never tr
 > **Media to make: `docs/media/explorer.png`** (screenshot)
 > The file explorer, plus a sliver of the editor. Include:
 > - a few files marked `✓` (fully read)
-> - a couple of files showing a percentage (`35`, `80`)
-> - one file with `!` (changed) and its parent folder tinted red
+> - one file marked `!` (changed since you read it)
+> - ideally a git-modified file nearby, to show the two don't clash
 >
 > Use a project with a recognizable folder structure.
 
-The explorer shows how much of each file you've read and flags the ones that changed.
+In the explorer, `✓` marks files you've read in full and `!` marks files that changed since.
 
 > **Media to make: `docs/media/fade.png`** (screenshot)
 > One file with blocks read at different times: fresh green, then yellow, then gray.

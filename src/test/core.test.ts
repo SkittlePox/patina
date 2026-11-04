@@ -475,14 +475,3 @@ test('exclude globs', () => {
   assert.ok(!compileExcludes([])('anything'));
   assert.ok(globToRegExp('./a.b/*.ts').test('a.b/x.ts') && !globToRegExp('a.b/*.ts').test('axb/x.ts'));
 });
-
-test('palettes: every palette contributes its explorer theme colors', () => {
-  const manifest = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '../../package.json'), 'utf8'));
-  const ids = new Set<string>(manifest.contributes.colors.map((c: { id: string }) => c.id));
-  for (const palette of Object.keys(PALETTES)) {
-    for (const state of ['Fresh', 'Aging', 'Old', 'Stale']) {
-      const id = palette === 'default' ? `patina.explorer${state}` : `patina.${palette}.explorer${state}`;
-      assert.ok(ids.has(id), `missing ${id}`);
-    }
-  }
-});

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { registerCommands } from './commands';
 import { PatinaConfig, readConfig } from './config';
 import { DecorationRenderer } from './decorations';
-import { ExplorerDecorations, StaleFolderDecorations } from './explorer';
+import { ExplorerDecorations } from './explorer';
 import { MarkHoverProvider } from './hover';
 import { MarkStore } from './store';
 import { ChangeTracker } from './tracker';
@@ -27,7 +27,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
   tracker.start();
   const renderer = new DecorationRenderer(store, cfg, vscode.Uri.joinPath(context.globalStorageUri, 'gutter').fsPath);
   const explorer = new ExplorerDecorations(store, getConfig);
-  const staleFolders = new StaleFolderDecorations(store, getConfig);
 
   context.subscriptions.push(
     log,
@@ -35,9 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
     tracker,
     renderer,
     explorer,
-    staleFolders,
     vscode.window.registerFileDecorationProvider(explorer),
-    vscode.window.registerFileDecorationProvider(staleFolders),
     vscode.languages.registerHoverProvider({ scheme: 'file' }, new MarkHoverProvider(store, getConfig)),
     ...registerCommands(store, tracker, getConfig),
     vscode.workspace.onDidChangeConfiguration((e) => {
@@ -47,7 +44,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Patina
       cfg = readConfig();
       renderer.applyConfig(cfg);
       explorer.refreshAll();
-      staleFolders.refreshAll();
       // Files that just stopped being excluded may have changed while hidden.
       if (excludeChanged) void tracker.validateAll('exclusions changed').then(() => renderer.renderAll());
       if (storageChanged) {

@@ -34,12 +34,10 @@ The editor's right-click menu has a **Patina** submenu with the same actions.
 - Lines you type on become read, dated now. Their hover and end-of-line note say **Edited** instead of **Read**. Marking such a line explicitly turns it back into Read.
 - **Hover** a marked line to see its category, when it was marked and how far it has faded. If it's stale, the hover also says when the change was detected.
 - **Explorer badges:**
-  - `42` means 42% of the file's non-blank lines are read.
   - `✓` means the whole file is read.
-  - `•` means the file has marks, but none of them are read.
   - `!` means it has stale lines.
 
-  The badge color shows how recently the file was read. Stale files also tint their parent folders.
+  Badges use the normal text color, and file names aren't recolored, so git's colors stay unambiguous. Hover a file to see its read percentage and how long ago it was read on average.
 - **Marking a folder** skips files excluded by `files.exclude`, `search.exclude` or `patina.exclude`. It also skips binary files and files over 5 MB.
 
 ## Categories and keybindings
@@ -88,16 +86,7 @@ Categories without colors take them from the palette. Custom categories get the 
 
 **Gutter bar placement:** the bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
-**Explorer colors follow the palette.** File-name colors in the explorer must be theme colors declared in advance, so each palette declares its own four: `patina.explorerFresh`, `Aging`, `Old` and `Stale` for `default`, and `patina.<palette>.explorerFresh` and so on for the others, e.g. `patina.muted.explorerStale`. Your own color settings (`patina.read.fadeColors` and the like) don't reach the explorer; to change those colors, override the theme colors in `workbench.colorCustomizations`:
-
-```jsonc
-"workbench.colorCustomizations": {
-  "patina.muted.explorerFresh": "#7f9a7f",
-  "patina.muted.explorerStale": "#a87878"
-}
-```
-
-The end-of-line note uses `patina.annotationForeground`.
+The end-of-line note uses the theme color `patina.annotationForeground`, which you can override in `workbench.colorCustomizations`.
 
 ## Settings
 
