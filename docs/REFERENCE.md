@@ -92,7 +92,7 @@ Categories without colors take them from the palette. Custom categories get the 
 When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
 
 ```
-Contents: 60% read · read on average 3h ago · 14 lines edited, most recently 1h ago · 2 Question
+Contents: 60% read · avg 3h ago · 14 lines edited, most recently 1h ago · 2 Question
 ```
 
 The summary replaces the first line's own cursor-line note. Blocks that hide fewer than `patina.foldSummary.minLines` lines (default 5), such as a folded argument list, get no summary and no blended highlight. Set `patina.foldSummary.show` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
@@ -102,7 +102,7 @@ The text comes from `patina.foldSummary.format`, a list of segments joined with 
 ```jsonc
 "patina.foldSummary.format": [
   "Contents: {readPercent}% read",
-  "read on average {readAge} ago",
+  "avg {readAge} ago",
   "{edited:line} edited, most recently {editedNewest} ago",
   "{categories}",
   "⚠ {stale} changed outside editor"

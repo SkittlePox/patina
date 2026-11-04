@@ -156,7 +156,7 @@ export async function run(): Promise<void> {
     await vscode.commands.executeCommand('editor.fold', { selectionLines: [0] });
     await waitFor(() => ed.visibleRanges.length > 1, 'fold to split visible ranges');
     const note = api.renderer.annotations(ed).get(0);
-    assert.equal(note, 'Contents: 60% read · read on average 1m ago · 1 Question');
+    assert.equal(note, 'Contents: 60% read · avg 1m ago · 1 Question');
     await vscode.commands.executeCommand('editor.unfold', { selectionLines: [0] });
     await waitFor(() => ed.visibleRanges.length === 1, 'unfold');
     assert.equal(api.renderer.annotations(ed).get(0), undefined);

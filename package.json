@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "publisher": "local",
   "repository": {
     "type": "git",
@@ -292,7 +292,7 @@
           },
           "default": [
             "Contents: {readPercent}% read",
-            "read on average {readAge} ago",
+            "avg {readAge} ago",
             "{edited:line} edited, most recently {editedNewest} ago",
             "{categories}",
             "⚠ {stale} changed outside editor"

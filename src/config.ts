@@ -17,7 +17,7 @@ const FOLD_SUMMARY_MODES: FoldSummaryMode[] = ['always', 'cursorLine', 'off'];
 
 export const DEFAULT_FOLD_SUMMARY_FORMAT = [
   'Contents: {readPercent}% read',
-  'read on average {readAge} ago',
+  'avg {readAge} ago',
   '{edited:line} edited, most recently {editedNewest} ago',
   '{categories}',
   '⚠ {stale} changed outside editor',
