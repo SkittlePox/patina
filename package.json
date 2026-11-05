@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.19.0",
+  "version": "0.19.1",
   "publisher": "local",
   "icon": "media/icon.png",
   "repository": {
@@ -299,12 +299,76 @@
             "category": "{label} · {age} ago"
           },
           "properties": {
-            "read": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines marked as read." },
-            "edited": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines read by typing on them." },
-            "stale": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines changed outside the editor." },
-            "category": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ], "description": "Lines in any static category without a template of its own." }
+            "read": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "Lines marked as read."
+            },
+            "edited": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "Lines read by typing on them."
+            },
+            "stale": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "Lines changed outside the editor."
+            },
+            "category": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "Lines in any static category without a template of its own."
+            }
           },
-          "additionalProperties": { "anyOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
           "markdownDescription": "Text of end-of-line notes (`#patina.annotations.cursorLine#`, `#patina.annotations.staleLines#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question` (see `#patina.read.label#`, `#patina.edited.label#` and `#patina.categories#`)\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleLabel}`: `#patina.stale.label#` (stale only)\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised\n\nAdd `|lower`, `|upper` or `|capitalize` to change a placeholder's case: `was last {label|lower} {age} ago` gives `was last read 5h ago`."
         },
         "patina.fold.summary": {
