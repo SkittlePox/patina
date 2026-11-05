@@ -43,7 +43,7 @@ export interface FileStats {
   lines: number;
   /** Non-blank lines carrying a fresh (non-stale) read mark. */
   read: number;
-  /** Lines with any mark. */
+  /** Lines with any mark, blank lines only if stale. */
   marked: number;
   /** Stale lines. */
   stale: number;
@@ -361,10 +361,11 @@ export class FileMarks {
       const blank = src.lineAt(i).trim() === '';
       if (!blank) lines++;
       const m = this.lines[i];
-      if (!m) continue;
+      // Blank lines only count once stale: a read mark on one is incidental, not an "other" mark.
+      if (!m || (blank && m.stale === undefined)) continue;
       marked++;
       if (m.stale !== undefined) stale++;
-      else if (m.cat === READ && !blank) {
+      else if (m.cat === READ) {
         read++;
         ageSum += Math.max(0, now - m.t);
       }

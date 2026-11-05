@@ -291,7 +291,7 @@ test('stats', () => {
   fm.mark(0, 1, READ, T0, src(lines));
   fm.mark(3, 3, 'next', T0, src(lines));
   const s = fm.stats(src(lines), T0 + 1000);
-  assert.deepEqual(s, { lines: 3, read: 1, marked: 3, stale: 0, meanReadAge: 1000 });
+  assert.deepEqual(s, { lines: 3, read: 1, marked: 2, stale: 0, meanReadAge: 1000 });
 });
 
 test('colors', () => {
