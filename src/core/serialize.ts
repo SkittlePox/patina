@@ -14,6 +14,8 @@ interface StoredRun {
   rm?: number;
   /** Read by the user's own typing. */
   ed?: 1;
+  /** Note on the run's first line. A line with a note always starts a run. */
+  n?: string;
 }
 
 export interface StoredFile {
@@ -50,6 +52,7 @@ export function deserialize(text: string): Map<string, FileMarks> {
         if (r.st !== undefined) m.stale = r.st;
         if (r.rm !== undefined) m.removed = r.rm;
         if (r.ed) m.edited = true;
+        if (i === 0 && typeof r.n === 'string' && r.n !== '') m.note = r.n;
         fm.lines[r.l + i] = m;
       });
     }
@@ -77,13 +80,15 @@ function toRuns(fm: FileMarks): StoredRun[] {
       cur.run.st === m.stale &&
       !!cur.run.ed === !!m.edited &&
       cur.run.rm === undefined &&
-      m.removed === undefined;
+      m.removed === undefined &&
+      m.note === undefined;
     if (!continues) {
       flush();
       const run: StoredRun = { l: line, cat: m.cat, t: m.t, h: '', x: '' };
       if (m.stale !== undefined) run.st = m.stale;
       if (m.removed !== undefined) run.rm = m.removed;
       if (m.edited) run.ed = 1;
+      if (m.note !== undefined) run.n = m.note;
       cur = { run, hs: [], xs: [], next: line };
     }
     cur!.hs.push(m.h);

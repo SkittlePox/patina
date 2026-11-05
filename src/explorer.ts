@@ -40,6 +40,7 @@ export class ExplorerDecorations implements vscode.FileDecorationProvider, vscod
     const other = s.marked - s.read - s.stale;
     if (other > 0) parts.push(`${other} other marked line${other === 1 ? '' : 's'}`);
     if (s.stale > 0) parts.push(`${this.getConfig().staleLabel}: ${s.stale} line${s.stale === 1 ? '' : 's'}`);
+    if (s.notes > 0) parts.push(`${s.notes} note${s.notes === 1 ? '' : 's'}`);
 
     const badge = s.stale > 0 ? '!' : s.read > 0 && coverage >= 0.995 ? '✓' : undefined;
     return new vscode.FileDecoration(badge, parts.join(' · '));

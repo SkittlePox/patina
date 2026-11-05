@@ -7,7 +7,7 @@ import { averageColors, formatColor, interpolateStops, parseColor, quantizeColor
 import { blockStats, FoldedGap, foldedGaps, formatSummary, lastUnclosedBracket, summaryValues } from './core/foldSummary';
 import { FileMarks, LineMark, LineSource, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
-import { formatLineNote } from './core/lineNote';
+import { formatLineNote, formatNoteOnly } from './core/lineNote';
 import { categoryCountLabel, FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
@@ -251,8 +251,9 @@ export class DecorationRenderer implements vscode.Disposable {
   }
 
   /**
-   * End-of-line notes by line: the cursor line's mark, and summaries of folded blocks on their first lines.
-   * A folded block's summary replaces its first line's own note.
+   * End-of-line notes by line: the cursor line's mark, stale lines (if enabled), the user's notes, and summaries
+   * of folded blocks on their first lines. A folded block's summary replaces its first line's own text, and
+   * lists that line's note with the notes inside the block.
    */
   annotations(editor: vscode.TextEditor): Map<number, string> {
     const notes = new Map<number, string>();
@@ -261,18 +262,24 @@ export class DecorationRenderer implements vscode.Disposable {
     const now = Date.now();
     const active = editor === vscode.window.activeTextEditor;
     const cursor = editor.selection.active.line;
+    const full = (m: LineMark) =>
+      formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs, this.cfg.staleLabel, this.cfg.noteDisplay);
     if (this.cfg.showCursorLineAnnotation && active && cursor < doc.lineCount) {
       const m = marks?.get(cursor);
       if (m) {
-        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs, this.cfg.staleLabel);
+        const text = full(m);
         if (text) notes.set(cursor, text);
       }
     }
-    if (this.cfg.showStaleAnnotations && marks) {
+    if (marks) {
       for (const [line, m] of marks.entries()) {
         if (line >= doc.lineCount) break;
-        if (m.stale === undefined || notes.has(line)) continue;
-        const text = formatLineNote(this.cfg.lineNoteFormats, m, markLabel(this.cfg, m), now, this.cfg.fadeMs, this.cfg.staleLabel);
+        if (notes.has(line)) continue;
+        let text = '';
+        if (this.cfg.showStaleAnnotations && m.stale !== undefined) text = full(m);
+        else if (m.note !== undefined && (this.cfg.showNotesOnAllLines || (active && line === cursor))) {
+          text = formatNoteOnly(m, this.cfg.noteDisplay);
+        }
         if (text) notes.set(line, text);
       }
     }
@@ -283,7 +290,10 @@ export class DecorationRenderer implements vscode.Disposable {
     for (const gap of this.gapsOf(editor)) {
       if ((gap.minor || this.cfg.foldSummary === 'cursorLine') && !(active && gap.header === cursor)) continue;
       const stats = blockStats(marks, src, gap.start, gap.end, now);
-      const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c, n) => categoryCountLabel(this.cfg, c, n), order));
+      const headerNote = marks.get(gap.header)?.note;
+      if (headerNote !== undefined) stats.notes.unshift(headerNote);
+      const values = summaryValues(stats, (c, n) => categoryCountLabel(this.cfg, c, n), order, this.cfg.noteDisplay.maxLength);
+      const text = formatSummary(this.cfg.foldSummaryFormat, values);
       if (text) notes.set(gap.header, text);
     }
     return notes;

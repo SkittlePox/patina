@@ -1,4 +1,4 @@
-import { FileMarks, LineSource, READ } from './marks';
+import { FileMarks, LineSource, NOTE_SEPARATOR, READ } from './marks';
 import { shortAge } from './time';
 
 /** Marks found inside a block of lines (typically a folded region). */
@@ -19,11 +19,13 @@ export interface BlockStats {
   staleNewest?: number;
   /** Fresh marks per static category id. */
   categories: Map<string, number>;
+  /** Notes on the block's lines, in line order (any line, blank or stale included). */
+  notes: string[];
 }
 
 /** Collects mark statistics for lines [start, end]. Ages are measured from `now`. */
 export function blockStats(marks: FileMarks | undefined, src: LineSource, start: number, end: number, now: number): BlockStats {
-  const s: BlockStats = { lines: 0, read: 0, readAgeSum: 0, edited: 0, editedAgeSum: 0, stale: 0, categories: new Map() };
+  const s: BlockStats = { lines: 0, read: 0, readAgeSum: 0, edited: 0, editedAgeSum: 0, stale: 0, categories: new Map(), notes: [] };
   const newest = (cur: number | undefined, age: number) => (cur === undefined ? age : Math.min(cur, age));
   end = Math.min(end, src.lineCount - 1);
   for (let i = Math.max(0, start); i <= end; i++) {
@@ -31,6 +33,7 @@ export function blockStats(marks: FileMarks | undefined, src: LineSource, start:
     if (!blank) s.lines++;
     const m = marks?.get(i);
     if (!m) continue;
+    if (m.note !== undefined) s.notes.push(m.note);
     if (m.stale !== undefined) {
       s.stale++;
       s.staleNewest = newest(s.staleNewest, Math.max(0, now - m.stale));
@@ -58,14 +61,39 @@ export function blockStats(marks: FileMarks | undefined, src: LineSource, start:
 /** A placeholder value: numbers are counts (0 means nothing to report), strings are shown as-is. */
 export type SummaryValue = number | string | undefined;
 
+/** `text` cut to at most `max` characters, ending in `…` if it was cut. */
+export function truncate(text: string, max: number): string {
+  if (max < 1) return '';
+  return text.length <= max ? text : text.slice(0, Math.max(0, max - 1)).trimEnd() + '…';
+}
+
+/**
+ * Notes joined with ` | `, as many as fit in `max` characters (the first is cut short if it alone doesn't),
+ * followed by `+N more` for the rest.
+ */
+export function noteList(notes: readonly string[], max: number): string | undefined {
+  if (notes.length === 0) return undefined;
+  const shown: string[] = [truncate(notes[0], max)];
+  let len = shown[0].length;
+  for (let i = 1; i < notes.length; i++) {
+    if (len + NOTE_SEPARATOR.length + notes[i].length > max) break;
+    shown.push(notes[i]);
+    len += NOTE_SEPARATOR.length + notes[i].length;
+  }
+  const rest = notes.length - shown.length;
+  return shown.join(NOTE_SEPARATOR) + (rest > 0 ? ` +${rest} more` : '');
+}
+
 /**
  * Placeholder values for a block. Counts are numbers; ages are short strings like `3h`.
  * `labelFor` gives a category's display label for a count (so it can pluralise); `categoryOrder` lists ids in settings order.
+ * `noteMax` limits the length of `{noteList}`.
  */
 export function summaryValues(
   s: BlockStats,
   labelFor: (cat: string, count: number) => string,
   categoryOrder: readonly string[],
+  noteMax = 80,
 ): Map<string, SummaryValue> {
   const age = (ms: number | undefined) => (ms === undefined ? undefined : shortAge(ms));
   const v = new Map<string, SummaryValue>();
@@ -81,6 +109,8 @@ export function summaryValues(
   v.set('editedNewest', age(s.editedNewest));
   v.set('stale', s.stale);
   v.set('staleNewest', age(s.staleNewest));
+  v.set('notes', s.notes.length);
+  v.set('noteList', noteList(s.notes, noteMax));
   const ids = [...categoryOrder.filter((id) => s.categories.has(id)), ...[...s.categories.keys()].filter((id) => !categoryOrder.includes(id))];
   for (const id of ids) v.set(`cat.${id}`, s.categories.get(id)!);
   v.set('categories', ids.map((id) => `${s.categories.get(id)} ${labelFor(id, s.categories.get(id)!)}`).join(', ') || undefined);

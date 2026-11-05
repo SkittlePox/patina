@@ -3,7 +3,7 @@ import { LineMark, READ } from './core/marks';
 import { compileExcludes } from './core/glob';
 import { DEFAULT_PALETTE, PALETTES, ResolvedColors, resolveColors } from './core/palettes';
 import { DAY_MS } from './core/time';
-import { DEFAULT_LINE_NOTE_FORMATS, LineNoteFormats } from './core/lineNote';
+import { DEFAULT_LINE_NOTE_FORMATS, DEFAULT_NOTE_DISPLAY, LineNoteFormats, NoteDisplay, NoteFormat } from './core/lineNote';
 
 export interface CategoryDef {
   id: string;
@@ -26,6 +26,7 @@ export const DEFAULT_FOLD_SUMMARY_FORMAT: Record<string, string> = {
   categories: '{categories}',
   stale: '⚠ {stale:line} changed outside editor',
   staleAge: 'most recently {staleNewest} ago',
+  notes: '✎ {noteList}',
 };
 
 export interface PatinaConfig {
@@ -52,6 +53,10 @@ export interface PatinaConfig {
   foldSummaryParameterLists: boolean;
   /** Show the note on every stale line, not just the cursor line. */
   showStaleAnnotations: boolean;
+  /** Show the user's notes on every line that has one, not just the cursor line. */
+  showNotesOnAllLines: boolean;
+  /** How a line's own note is shown at the end of the line. */
+  noteDisplay: NoteDisplay;
   /** How much more a stale line counts than other lines in a folded block's blended highlight. */
   foldStaleWeight: number;
   showInOverviewRuler: boolean;
@@ -98,6 +103,11 @@ export function readConfig(): PatinaConfig {
     foldSummaryMinLines: Math.max(1, Math.floor(c.get<number>('fold.summaryMinLines') ?? 5)),
     foldSummaryParameterLists: c.get<boolean>('fold.parameterLists') ?? false,
     showStaleAnnotations: c.get<boolean>('annotations.staleLines') ?? false,
+    showNotesOnAllLines: c.get<boolean>('notes.allLines') ?? true,
+    noteDisplay: {
+      format: noteFormat(c.get<unknown>('notes.format')) ?? DEFAULT_NOTE_DISPLAY.format,
+      maxLength: Math.max(10, Math.floor(c.get<number>('notes.maxLength') ?? DEFAULT_NOTE_DISPLAY.maxLength)),
+    },
     foldStaleWeight: Math.max(1, c.get<number>('fold.staleWeight') ?? 10),
     showInOverviewRuler: c.get<boolean>('showInOverviewRuler') ?? true,
     highlightStyle: HIGHLIGHT_STYLES.find((h) => h === c.get<string>('highlightStyle')) ?? 'background',
@@ -116,6 +126,12 @@ function lineNoteFormats(raw: unknown): LineNoteFormats {
     else if (Array.isArray(v)) out[k] = v.filter((x): x is string => typeof x === 'string');
   }
   return out;
+}
+
+function noteFormat(raw: unknown): NoteFormat | undefined {
+  if (typeof raw === 'string') return raw;
+  if (Array.isArray(raw)) return raw.filter((x): x is string => typeof x === 'string');
+  return undefined;
 }
 
 /**

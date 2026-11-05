@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { linesFromText, LineSource, READ } from './core/marks';
+import { linesFromText, LineSource, normalizeNote, READ } from './core/marks';
 import { categoryLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 import { ChangeTracker, decodeText, docSource } from './tracker';
@@ -8,6 +8,8 @@ const CONFIRM_FILE_COUNT = 300;
 const MAX_FOLDER_FILES = 50_000;
 
 type CategoryArg = string | { category?: string } | undefined;
+/** Target of a note command run from a hover link: a document and a 0-based line. */
+type NoteArg = { uri?: string; line?: number } | undefined;
 
 export function registerCommands(
   store: MarkStore,
@@ -24,6 +26,8 @@ export function registerCommands(
       if (cat) await markSelection(store, tracker, getConfig, cat);
     }),
     reg('patina.clearMarks', () => clearSelection(store, tracker)),
+    reg('patina.editNote', (arg: NoteArg) => editNote(store, tracker, getConfig, arg)),
+    reg('patina.removeNote', (arg: NoteArg) => removeNote(store, tracker, arg)),
     reg('patina.markFileRead', (uri?: vscode.Uri, uris?: vscode.Uri[]) => markFiles(store, getConfig, READ, uri, uris)),
     reg('patina.markFileAs', async (uri?: vscode.Uri, uris?: vscode.Uri[]) => {
       const cat = await pickCategory(getConfig());
@@ -45,12 +49,12 @@ function categoryFromArg(arg: CategoryArg): string | undefined {
   return undefined;
 }
 
-async function pickCategory(cfg: PatinaConfig): Promise<string | undefined> {
+async function pickCategory(cfg: PatinaConfig, placeHolder = 'Mark as…'): Promise<string | undefined> {
   const items: (vscode.QuickPickItem & { id: string })[] = [
     { id: READ, label: cfg.readLabel, description: 'fades with age' },
     ...[...cfg.categories.values()].map((c) => ({ id: c.id, label: c.label, description: c.id })),
   ];
-  const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Mark as…' });
+  const pick = await vscode.window.showQuickPick(items, { placeHolder });
   return pick?.id;
 }
 
@@ -94,6 +98,64 @@ async function markSelection(store: MarkStore, tracker: ChangeTracker, getConfig
   store.changed([editor.document.uri]);
   tracker.scheduleStats(editor.document);
   vscode.window.setStatusBarMessage(`Patina: marked as ${categoryLabel(cfg, cat)}`, 1500);
+}
+
+/** The document and line a note command applies to: the hover link's target, else the selection's first line. */
+function noteTarget(arg: NoteArg): { doc: vscode.TextDocument; line: number; editor?: vscode.TextEditor } | undefined {
+  if (arg && typeof arg.uri === 'string' && typeof arg.line === 'number') {
+    const doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === arg.uri);
+    return doc && arg.line < doc.lineCount ? { doc, line: arg.line } : undefined;
+  }
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) return undefined;
+  const line = Math.min(...editor.selections.map((sel) => sel.start.line));
+  return { doc: editor.document, line, editor };
+}
+
+async function editNote(store: MarkStore, tracker: ChangeTracker, getConfig: () => PatinaConfig, arg: NoteArg): Promise<void> {
+  const target = noteTarget(arg);
+  if (!target) return;
+  const { doc, line, editor } = target;
+  const existing = store.get(doc.uri)?.get(line);
+  const note = await vscode.window.showInputBox({
+    title: existing?.note === undefined ? 'Patina: Add Note' : 'Patina: Edit Note',
+    prompt: `Note for line ${line + 1}${existing?.note === undefined ? '' : '. Leave empty to remove it'}.`,
+    value: existing?.note ?? '',
+    placeHolder: 'e.g. why does this retry twice?',
+  });
+  if (note === undefined) return;
+  // Looked up again: the marks may have changed while the input box was open.
+  const current = store.get(doc.uri);
+  if (!current?.get(line)) {
+    // Notes live on marks: an unmarked line gets marked first, along with the rest of the selection.
+    if (normalizeNote(note) === undefined || !editor) return;
+    const cfg = getConfig();
+    const cat = await pickCategory(cfg, 'Mark the line as… (a note needs a mark)');
+    if (!cat || !checkCategory(cfg, cat)) return;
+    const marks = editorMarks(store, editor, true);
+    if (!marks) return;
+    const src = docSource(doc);
+    const now = Date.now();
+    for (const [s, e] of selectedLineRanges(editor)) marks.mark(s, e, cat, now, src);
+    marks.setNote(line, note);
+  } else {
+    current.setNote(line, note);
+  }
+  store.changed([doc.uri]);
+  tracker.scheduleStats(doc);
+}
+
+function removeNote(store: MarkStore, tracker: ChangeTracker, arg: NoteArg): void {
+  const target = noteTarget(arg);
+  if (!target) return;
+  const marks = store.get(target.doc.uri);
+  if (marks?.get(target.line)?.note === undefined) {
+    vscode.window.setStatusBarMessage('Patina: no note on this line.', 2000);
+    return;
+  }
+  marks.setNote(target.line, undefined);
+  store.changed([target.doc.uri]);
+  tracker.scheduleStats(target.doc);
 }
 
 function clearSelection(store: MarkStore, tracker: ChangeTracker): void {
@@ -197,7 +259,8 @@ async function markFiles(
           skipped++;
           continue;
         }
-        marks.lines = [];
+        // Every line is re-marked (keeping notes); marks past the end of the file go.
+        if (marks.lines.length > src.lineCount) marks.lines.length = src.lineCount;
         marks.mark(0, src.lineCount - 1, cat, now, src);
         store.setStats(f, marks.stats(src, now), false);
         changed.push(f);

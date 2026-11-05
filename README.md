@@ -52,6 +52,8 @@ In the explorer, `✓` marks files you've read in full and `!` marks files that 
 
 Press `ctrl+alt+n` to mark lines to come back to, and `ctrl+alt+q` for a question. You can add your own categories, each with a color and a key.
 
+Press `ctrl+alt+m` to write a note on a marked line, such as what your question is. The note shows at the end of the line, and a folded block lists the notes inside it. Notes stay when you mark the line again or edit it, and go when you clear its mark.
+
 ## Colors
 
 > **Media to make: `docs/media/palettes.png`** (screenshot, grid of five)
@@ -77,6 +79,7 @@ cursor --install-extension patina-*.vsix    # or: code --install-extension …
 | `ctrl+alt+r` | Mark as read |
 | `ctrl+alt+n` | Mark to come back to |
 | `ctrl+alt+q` | Mark as a question |
+| `ctrl+alt+m` | Add or edit a note on the line |
 | `ctrl+alt+u` | Clear marks |
 
 To mark a whole file or folder, right-click it in the explorer and choose **Patina**.

@@ -16,6 +16,7 @@ export class MarkHoverProvider implements vscode.HoverProvider {
     const cfg = this.getConfig();
     const now = Date.now();
     const md = new vscode.MarkdownString(undefined, true);
+    md.isTrusted = { enabledCommands: ['patina.editNote', 'patina.removeNote'] };
     md.appendMarkdown('**Patina** · ');
     md.appendText(markLabel(cfg, m));
     if (m.cat === READ && m.stale === undefined) {
@@ -23,6 +24,10 @@ export class MarkHoverProvider implements vscode.HoverProvider {
       md.appendMarkdown(` · ${pct}% faded`);
     }
     md.appendMarkdown(`\n\nMarked ${formatTimestamp(m.t)} (${relativeAge(now - m.t)})`);
+    if (m.note !== undefined) {
+      md.appendMarkdown('\n\n$(note) ');
+      md.appendText(m.note);
+    }
     if (m.stale !== undefined) {
       const when = `${formatTimestamp(m.stale)} (${relativeAge(now - m.stale)})`;
       if (m.removed) {
@@ -35,6 +40,12 @@ export class MarkHoverProvider implements vscode.HoverProvider {
       }
       md.appendMarkdown('\n\n_Mark it again to clear._');
     }
+    const target = encodeURIComponent(JSON.stringify([{ uri: doc.uri.toString(), line: pos.line }]));
+    md.appendMarkdown(
+      m.note !== undefined
+        ? `\n\n[Edit note](command:patina.editNote?${target}) · [Remove note](command:patina.removeNote?${target})`
+        : `\n\n[Add note](command:patina.editNote?${target})`,
+    );
     return new vscode.Hover(md, doc.lineAt(pos.line).range);
   }
 }

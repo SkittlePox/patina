@@ -17,7 +17,18 @@ export interface LineMark {
   removed?: number;
   /** A read mark created by the user's own typing rather than by marking the line explicitly. */
   edited?: boolean;
+  /** The user's note on this line. Kept when the line is marked again or typed on; removed with the mark. */
+  note?: string;
 }
+
+/** A note as stored: whitespace collapsed to single spaces and trimmed; undefined if nothing is left. */
+export function normalizeNote(text: string | undefined): string | undefined {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim();
+  return t === '' ? undefined : t;
+}
+
+/** Joins notes from lines merged into one. */
+export const NOTE_SEPARATOR = ' | ';
 
 /** Read access to a document's lines. */
 export interface LineSource {
@@ -47,6 +58,8 @@ export interface FileStats {
   marked: number;
   /** Stale lines. */
   stale: number;
+  /** Lines with a note. */
+  notes: number;
   /** Mean age (ms) of fresh read marks, or undefined if none. */
   meanReadAge?: number;
 }
@@ -57,8 +70,11 @@ export interface ValidateResult {
   newlyStale: number;
 }
 
-function clone(m: LineMark): LineMark {
-  return { ...m };
+/** A copy of a mark for a line that didn't have it before (a split or inserted line): notes stay on the original. */
+function inherit(m: LineMark): LineMark {
+  const c = { ...m };
+  delete c.note;
+  return c;
 }
 
 function ctxAt(src: LineSource, i: number): string {
@@ -85,20 +101,43 @@ export class FileMarks {
     }
   }
 
-  /** Mark lines [start, end] with a category. Replaces existing marks and clears stale state. */
+  /** Mark lines [start, end] with a category. Replaces existing marks (keeping their notes) and clears stale state. */
   mark(start: number, end: number, cat: string, now: number, src: LineSource): void {
     end = Math.min(end, src.lineCount - 1);
     for (let i = Math.max(0, start); i <= end; i++) {
-      this.lines[i] = { cat, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i) };
+      this.put(i, { cat, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i) });
     }
   }
 
-  /** Lines the user typed on become read, timestamped now, whatever they were before (unmarked, any category, stale). */
+  /**
+   * Lines the user typed on become read, timestamped now, whatever they were before (unmarked, any category, stale).
+   * Notes are kept.
+   */
   markTyped(start: number, end: number, now: number, src: LineSource): void {
     end = Math.min(end, src.lineCount - 1);
     for (let i = Math.max(0, start); i <= end; i++) {
-      this.lines[i] = { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i), edited: true };
+      this.put(i, { cat: READ, t: now, h: hashLine(src.lineAt(i)), c: ctxAt(src, i), edited: true });
     }
+  }
+
+  /** Replace line i's mark, carrying over its note. */
+  private put(i: number, m: LineMark): void {
+    const note = this.lines[i]?.note;
+    if (note !== undefined) m.note = note;
+    this.lines[i] = m;
+  }
+
+  /**
+   * Set or (with an empty note) remove the note on a marked line. Returns false if the line has no mark.
+   * The note is normalized with `normalizeNote`.
+   */
+  setNote(line: number, note: string | undefined): boolean {
+    const m = this.get(line);
+    if (!m) return false;
+    const n = normalizeNote(note);
+    if (n === undefined) delete m.note;
+    else m.note = n;
+    return true;
   }
 
   clear(start: number, end: number): void {
@@ -151,7 +190,7 @@ export class FileMarks {
       const region: (LineMark | undefined)[] = [];
       for (let j = 0; j <= ch.insertedLineBreaks; j++) {
         const o = j < old.length ? old[j] : old[old.length - 1];
-        region.push(o && j >= old.length ? clone(o) : o);
+        region.push(o && j >= old.length ? inherit(o) : o);
       }
       this.replaceRegion(ch.startLine, ch.endLine, region);
     }
@@ -189,15 +228,22 @@ export class FileMarks {
         if (j < oldMid.length) region[p + j] = oldMid[j];
         else {
           const o = oldMid[oldMid.length - 1];
-          region[p + j] = o ? clone(o) : undefined;
+          region[p + j] = o ? inherit(o) : undefined;
         }
+      }
+      // Lines were joined (e.g. backspace at the start of a line): the last old line's tail survives in the
+      // last new line, so its note moves there. Lines deleted in between lose their notes with their text.
+      const into = newMidLen > 0 ? region[p + newMidLen - 1] : undefined;
+      const tail = oldMid.length > newMidLen ? oldMid[oldMid.length - 1] : undefined;
+      if (into && tail?.note !== undefined) {
+        region[p + newMidLen - 1] = { ...into, note: into.note === undefined ? tail.note : into.note + NOTE_SEPARATOR + tail.note };
       }
     } else if (newMidLen > 0) {
       // Pure insertion of whole lines: only extend a mark if the insertion is inside a marked block.
       const above = p > 0 ? region[p - 1] : this.get(sL - 1);
       const below = s > 0 ? region[newLen - s] : this.get(eL + 1);
       if (above && below) {
-        for (let j = 0; j < newMidLen; j++) region[p + j] = clone(above);
+        for (let j = 0; j < newMidLen; j++) region[p + j] = inherit(above);
       }
     }
 
@@ -316,7 +362,7 @@ export class FileMarks {
         // A fully-marked block was rewritten: everything now between the neighbours is stale.
         for (let q = pp + 1; q < np; q++) {
           const idx = q - pp - 1;
-          const m = idx < run.length ? run[idx].m : clone(run[run.length - 1].m);
+          const m = idx < run.length ? run[idx].m : inherit(run[run.length - 1].m);
           flagStale(m);
           placed.set(q, m);
         }
@@ -356,11 +402,13 @@ export class FileMarks {
     let read = 0;
     let marked = 0;
     let stale = 0;
+    let notes = 0;
     let ageSum = 0;
     for (let i = 0; i < src.lineCount; i++) {
       const blank = src.lineAt(i).trim() === '';
       if (!blank) lines++;
       const m = this.lines[i];
+      if (m?.note !== undefined) notes++;
       // Blank lines only count once stale: a read mark on one is incidental, not an "other" mark.
       if (!m || (blank && m.stale === undefined)) continue;
       marked++;
@@ -370,7 +418,7 @@ export class FileMarks {
         ageSum += Math.max(0, now - m.t);
       }
     }
-    return { lines, read, marked, stale, meanReadAge: read > 0 ? ageSum / read : undefined };
+    return { lines, read, marked, stale, notes, meanReadAge: read > 0 ? ageSum / read : undefined };
   }
 }
 

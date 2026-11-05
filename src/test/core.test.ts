@@ -7,8 +7,8 @@ import { gutterBarSvg } from '../core/gutter';
 import { PALETTES, resolveColors } from '../core/palettes';
 import { changedSpans, DocShadow, isAtCursors } from '../core/typing';
 import { compileExcludes, globToRegExp } from '../core/glob';
-import { blockStats, foldedGaps, formatSummary, lastUnclosedBracket, summaryValues } from '../core/foldSummary';
-import { DEFAULT_LINE_NOTE_FORMATS, formatLineNote } from '../core/lineNote';
+import { blockStats, foldedGaps, formatSummary, lastUnclosedBracket, noteList, summaryValues } from '../core/foldSummary';
+import { DEFAULT_LINE_NOTE_FORMATS, formatLineNote, formatNoteOnly } from '../core/lineNote';
 
 const T0 = 1_700_000_000_000;
 const T1 = T0 + 86_400_000;
@@ -291,7 +291,7 @@ test('stats', () => {
   fm.mark(0, 1, READ, T0, src(lines));
   fm.mark(3, 3, 'next', T0, src(lines));
   const s = fm.stats(src(lines), T0 + 1000);
-  assert.deepEqual(s, { lines: 3, read: 1, marked: 2, stale: 0, meanReadAge: 1000 });
+  assert.deepEqual(s, { lines: 3, read: 1, marked: 2, stale: 0, notes: 0, meanReadAge: 1000 });
 });
 
 test('colors', () => {
@@ -631,4 +631,122 @@ test('fold summary: category counts use a plural label when given', () => {
   assert.equal(v.get('categories'), '1 Attend to next, 2 Questions');
   fm.clear(1, 1);
   assert.equal(summaryValues(blockStats(fm, src(lines), 0, 3, T1), labelFor, ['next', 'question']).get('categories'), '1 Attend to next, 1 Question');
+});
+
+test('notes: set on a marked line only, normalized, removed when empty', () => {
+  const lines = ['a', 'b'];
+  const fm = new FileMarks();
+  assert.equal(fm.setNote(0, 'x'), false);
+  fm.mark(0, 1, 'question', T0, src(lines));
+  assert.equal(fm.setNote(0, '  why\n  twice?  '), true);
+  assert.equal(fm.get(0)!.note, 'why twice?');
+  assert.equal(fm.get(1)!.note, undefined);
+  fm.setNote(0, '   ');
+  assert.equal(fm.get(0)!.note, undefined);
+});
+
+test('notes: kept when the line is marked again or typed on, removed with the mark', () => {
+  const lines = ['a', 'b', 'c'];
+  const fm = new FileMarks();
+  fm.mark(0, 2, 'question', T0, src(lines));
+  fm.setNote(1, 'n');
+  fm.mark(0, 2, READ, T1, src(lines));
+  assert.deepEqual([fm.get(1)!.cat, fm.get(1)!.note], [READ, 'n']);
+  const e = edit(lines, 1, 1, 1, 1, 'x');
+  fm.applyUserEdits([e.change], src(e.lines));
+  fm.markTyped(1, 1, T1, src(e.lines));
+  assert.deepEqual([fm.get(1)!.edited, fm.get(1)!.note], [true, 'n']);
+  fm.validate(src(['a', 'BX', 'c']), T1);
+  assert.equal(fm.get(1)!.stale, T1);
+  assert.equal(fm.get(1)!.note, 'n');
+  fm.clear(1, 1);
+  fm.mark(1, 1, READ, T1, src(lines));
+  assert.equal(fm.get(1)!.note, undefined);
+});
+
+test('notes: splitting a line or inserting lines inside a block does not copy the note', () => {
+  let lines = ['a', 'b', 'c'];
+  const fm = new FileMarks();
+  fm.mark(0, 2, READ, T0, src(lines));
+  fm.setNote(1, 'n');
+  let e = edit(lines, 1, 1, 1, 1, '\nnew'); // Enter at the end of the noted line
+  fm.applyUserEdits([e.change], src(e.lines));
+  lines = e.lines;
+  assert.deepEqual(markedLines(fm), [0, 1, 2, 3]);
+  assert.deepEqual([fm.get(1)!.note, fm.get(2)!.note], ['n', undefined]);
+  e = edit(lines, 1, 0, 1, 0, 'top\n'); // Enter at the start: the note moves down with its text
+  fm.applyUserEdits([e.change], src(e.lines));
+  assert.deepEqual([fm.get(1)!.note, fm.get(2)!.note], [undefined, 'n']);
+});
+
+test('notes: joining a noted line into the one above keeps the note; deleting the line drops it', () => {
+  const lines = ['a', 'b', 'c'];
+  const fm = new FileMarks();
+  fm.mark(0, 2, READ, T0, src(lines));
+  fm.setNote(0, 'first');
+  fm.setNote(1, 'second');
+  const joined = edit(lines, 0, 1, 1, 0, ''); // backspace at the start of line 1
+  const j = new FileMarks();
+  j.lines = fm.lines.map((m) => m && { ...m });
+  j.applyUserEdits([joined.change], src(joined.lines));
+  assert.deepEqual(joined.lines, ['ab', 'c']);
+  assert.equal(j.get(0)!.note, 'first | second');
+  const deleted = edit(lines, 1, 0, 2, 0, ''); // delete line 1 whole
+  fm.applyUserEdits([deleted.change], src(deleted.lines));
+  assert.deepEqual(deleted.lines, ['a', 'c']);
+  assert.deepEqual([fm.get(0)!.note, fm.get(1)!.note], ['first', undefined]);
+});
+
+test('notes: re-anchored with their line by validation', () => {
+  const lines = file(5);
+  const fm = new FileMarks();
+  fm.mark(0, 4, READ, T0, src(lines));
+  fm.setNote(3, 'n');
+  fm.validate(src(['inserted', ...lines]), T1);
+  assert.equal(fm.get(4)!.note, 'n');
+  assert.equal(fm.get(4)!.stale, undefined);
+});
+
+test('notes: storage round-trip; a noted line starts its own run', () => {
+  const lines = file(4);
+  const fm = new FileMarks();
+  fm.mark(0, 3, 'question', T0, src(lines));
+  fm.setNote(2, 'why "this"?');
+  const text = serialize(new Map([['a.ts', fm]]));
+  assert.equal((text.match(/"l":/g) ?? []).length, 2);
+  const back = deserialize(text).get('a.ts')!;
+  assert.deepEqual(back.lines, fm.lines);
+  assert.equal(fm.stats(src(lines), T0).notes, 1);
+});
+
+test('notes: end-of-line text follows the mark text, or stands alone', () => {
+  const lines = ['a'];
+  const fm = new FileMarks();
+  fm.mark(0, 0, 'question', T0, src(lines));
+  const display = { format: '✎ {note}', maxLength: 12 };
+  assert.equal(formatNoteOnly(fm.get(0)!, display), '');
+  assert.equal(formatLineNote(DEFAULT_LINE_NOTE_FORMATS, fm.get(0)!, 'Question', T1, 1, 'Stale', display), 'Question · 1d ago');
+  fm.setNote(0, 'why does this retry?');
+  assert.equal(formatNoteOnly(fm.get(0)!, display), '✎ why does th…');
+  assert.equal(formatLineNote(DEFAULT_LINE_NOTE_FORMATS, fm.get(0)!, 'Question', T1, 1, 'Stale', display), 'Question · 1d ago · ✎ why does th…');
+  // A template that places {note} itself gets no second copy; a hidden template still shows the note.
+  const own = { ...DEFAULT_LINE_NOTE_FORMATS, question: '{label}: {note}' };
+  assert.equal(formatLineNote(own, fm.get(0)!, 'Question', T1, 1, 'Stale', display), 'Question: why does th…');
+  const hidden = { ...DEFAULT_LINE_NOTE_FORMATS, category: '' };
+  assert.equal(formatLineNote(hidden, fm.get(0)!, 'Question', T1, 1, 'Stale', display), '✎ why does th…');
+});
+
+test('notes: folded-block summary lists notes, cut to fit', () => {
+  const lines = file(5);
+  const fm = new FileMarks();
+  fm.mark(0, 4, READ, T0, src(lines));
+  fm.setNote(1, 'alpha');
+  fm.setNote(3, 'beta');
+  const stats = blockStats(fm, src(lines), 0, 4, T1);
+  assert.deepEqual(stats.notes, ['alpha', 'beta']);
+  const v = summaryValues(stats, (c) => c, [], 80);
+  assert.equal(formatSummary(['✎ {noteList}', '{notes:note}'], v), '✎ alpha | beta · 2 notes');
+  assert.equal(noteList(['alpha', 'beta', 'gamma'], 12), 'alpha | beta +1 more');
+  assert.equal(noteList(['a very long first note'], 10), 'a very lo…');
+  assert.equal(noteList([], 10), undefined);
 });

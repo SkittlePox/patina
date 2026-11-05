@@ -4,6 +4,7 @@
 - [Marks](#marks)
 - [Categories and keybindings](#categories-and-keybindings)
 - [Colors](#colors)
+- [Notes](#notes)
 - [Settings](#settings)
 - [What gets tracked](#what-gets-tracked)
 - [How change detection works](#how-change-detection-works)
@@ -19,6 +20,8 @@
 | Mark as attend-to-next | `ctrl+alt+n` | `Patina: Mark Lines as Attend To Next` |
 | Mark as question | `ctrl+alt+q` | `Patina: Mark Lines as Question` |
 | Mark as any category (picker) | — | `Patina: Mark Lines As…` |
+| Add or edit a note on the line | `ctrl+alt+m` | `Patina: Add or Edit Note on Line…` |
+| Remove the line's note | — | `Patina: Remove Note on Line` |
 | Clear marks on selected lines | `ctrl+alt+u` | `Patina: Clear Marks on Lines` |
 | Mark whole file(s)/folder(s) | explorer menu → Patina | `Patina: Mark Whole File(s) as Read` / `…As…` |
 | Clear file(s)/folder(s) | explorer menu → Patina | `Patina: Clear All Marks in File(s)` |
@@ -32,6 +35,7 @@ The editor's right-click menu has a **Patina** submenu with the same actions.
 - Re-marking also clears stale state. That's how you acknowledge a change once you've reread it.
 - **Read** marks fade over `patina.read.fadeDays`. Other categories keep a fixed color.
 - Lines you type on become read, dated now. Their hover and end-of-line note say **Edited** (`patina.edited.label`) instead of **Read**. Marking such a line explicitly turns it back into Read.
+- **Notes:** any marked line can hold a note. See [Notes](#notes).
 - **Hover** a marked line to see its category, when it was marked and how far it has faded. If it's stale, the hover also says when the change was detected.
 - **Explorer badges:**
   - `✓` means the whole file is read.
@@ -89,19 +93,33 @@ Categories without colors take them from the palette. Custom categories get the 
 
 **Gutter bar placement:** the bar shares its column with breakpoints and other extensions' gutter icons, and needs `editor.glyphMargin` turned on (it is by default). There's no left-edge stripe option: extensions can only draw on the code layer, so a stripe would cover the first character of each line.
 
+## Notes
+
+Press `ctrl+alt+m` (**Patina: Add or Edit Note on Line…**) to write a note on the cursor line, or click **Add note** in a marked line's hover. With several lines selected, the note goes on the first one. If that line has no mark yet, Patina asks which mark to give the selection, since notes live on marks. To change a note, run the command again or click **Edit note** in the hover. Clear the text, or click **Remove note**, to remove it.
+
+- The note shows at the end of its line, wherever the cursor is: `✎ why does this retry twice?`. On the cursor line it follows the mark's own note: `Question · 2h ago · ✎ why does this retry twice?`. Turn off `patina.notes.allLines` to show notes on the cursor line only.
+- Notes longer than `patina.notes.maxLength` (default 80) are cut short with `…`. The hover shows the whole note.
+- A note stays with its line when the line is marked again with any category, typed on, moved, or changed outside the editor (it goes stale with its note).
+- Clearing a line's mark removes its note.
+- Splitting a line keeps the note on the part where it started; the new line gets none. Joining a noted line onto the one above (backspace at its start) moves the note there. Deleting the line deletes the note.
+- A folded block's summary lists the notes inside it, its first line included: `✎ why twice? | check bounds +2 more`.
+- The explorer tooltip counts a file's notes.
+
+`patina.notes.format` sets the text, with a `{note}` placeholder (default `✎ {note}`). The `{note}` placeholder also works in `patina.annotations.format`. A kind of mark whose template uses `{note}` places the note itself, instead of having it appended.
+
 ## Folded blocks
 
 When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
 
 ```
-Contents 60% read · avg 3h ago · 2 Questions · ⚠ 1 line changed outside editor · most recently 2h ago
+Contents 60% read · avg 3h ago · 2 Questions · ⚠ 1 line changed outside editor · most recently 2h ago · ✎ why twice?
 ```
 
-The summary replaces the first line's own end-of-line note. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
+The summary replaces the first line's own end-of-line note. Its note, if any, is listed with the block's notes. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
 
 Folded parameter lists of function and method definitions are treated the same way, whatever their size. Turn on `patina.fold.parameterLists` to treat them like any other block. A fold counts as a parameter list when its first line ends inside an open `(` and the language reports a function, method or constructor named on that line. That excludes folded call arguments, but it needs the language's extension to provide document symbols (Python, TypeScript and most others do). Set `patina.fold.summary` to `cursorLine` to show summaries only on the cursor line, or `off` to hide them. Summaries appear only in files Patina tracks.
 
-The text comes from `patina.fold.summaryFormat`, a set of named segments joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is also left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
+The text comes from `patina.fold.summaryFormat`, a set of named segments joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, `notes`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is also left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure):
 
 ```jsonc
 "patina.fold.summaryFormat": {
@@ -110,7 +128,8 @@ The text comes from `patina.fold.summaryFormat`, a set of named segments joined 
   "edited": "",   // hidden by default; e.g. "{edited:line} edited, most recently {editedNewest} ago"
   "categories": "{categories}",
   "stale": "⚠ {stale:line} changed outside editor",
-  "staleAge": "most recently {staleNewest} ago"
+  "staleAge": "most recently {staleNewest} ago",
+  "notes": "✎ {noteList}"
 }
 ```
 
@@ -122,6 +141,7 @@ The text comes from `patina.fold.summaryFormat`, a set of named segments joined 
 | `{stale}`, `{staleNewest}` | Lines changed outside the editor, most recent detection age |
 | `{categories}` | Per-category counts, such as `2 Questions, 1 Attend to next` (see `plural` under [Categories](#categories-and-keybindings)) |
 | `{cat.<id>}` | Count for one category, such as `{cat.question}` |
+| `{notes}`, `{noteList}` | Number of [notes](#notes) in the block (first line included), and the notes joined with ` \| `, as many as fit in `patina.notes.maxLength`, then `+N more` |
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
 
@@ -155,6 +175,7 @@ Each value is a string, or a list of segments joined with ` · `, using the same
 | `{staleLabel}` | `patina.stale.label` (stale only) |
 | `{age}`, `{date}` | When the line was marked (`5h`, `2026-11-04 14:30`) |
 | `{faded}` | How far a read mark has faded, in percent |
+| `{note}` | The line's [note](#notes). Without it in the template, a note is appended |
 | `{staleAge}`, `{staleDate}` | When the change outside the editor was detected (stale only) |
 | `{removed}` | Marked lines deleted next to this one outside the editor (stale only) |
 
@@ -180,6 +201,9 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | `patina.annotations.cursorLine` | `true` | Faint end-of-line note on the cursor line |
 | `patina.annotations.staleLines` | `false` | Show the note on every stale line, not just the cursor line |
 | `patina.annotations.format` | see [End-of-line notes](#end-of-line-notes) | Text of those notes for each kind of mark |
+| `patina.notes.allLines` | `true` | Show your [notes](#notes) on every line that has one, not just the cursor line |
+| `patina.notes.format` | `✎ {note}` | Text of a note at the end of its line |
+| `patina.notes.maxLength` | `80` | Longer notes are cut short at the end of the line and in fold summaries |
 | `patina.fold.summary` | `always` | Summary of a folded block's marks on its first line: `always`, `cursorLine` or `off` |
 | `patina.fold.summaryFormat` | see [Folded blocks](#folded-blocks) | Named segments of that summary, with placeholders |
 | `patina.fold.highlight` | `true` | Tint a folded block's first line with the average color of its lines |
@@ -266,7 +290,7 @@ The invariant: a line changed by a foreign edit is never shown as freshly read.
 
 ## Storage
 
-Marks are saved as JSON in `.vscode/patina.json`, with one line per run of marks. The first time the file is created in a git repo, Patina offers to add it to `.git/info/exclude` (private) or to `.gitignore`.
+Marks are saved as JSON in `.vscode/patina.json`, with one line per run of marks. A line with a note starts its own run, with the note in `n`. Notes are stored as plain text, so anyone you share the file with can read them. The first time the file is created in a git repo, Patina offers to add it to `.git/info/exclude` (private) or to `.gitignore`.
 
 ## Development
 

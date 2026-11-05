@@ -48,6 +48,16 @@
         "category": "Patina"
       },
       {
+        "command": "patina.editNote",
+        "title": "Add or Edit Note on Line…",
+        "category": "Patina"
+      },
+      {
+        "command": "patina.removeNote",
+        "title": "Remove Note on Line",
+        "category": "Patina"
+      },
+      {
         "command": "patina.markFileRead",
         "title": "Mark Whole File(s) as Read",
         "category": "Patina"
@@ -104,6 +114,14 @@
           "group": "1_mark@4"
         },
         {
+          "command": "patina.editNote",
+          "group": "1z_note@1"
+        },
+        {
+          "command": "patina.removeNote",
+          "group": "1z_note@2"
+        },
+        {
           "command": "patina.clearMarks",
           "group": "2_clear@1"
         },
@@ -156,6 +174,14 @@
         {
           "command": "patina.clearMarks",
           "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.editNote",
+          "when": "editorIsOpen"
+        },
+        {
+          "command": "patina.removeNote",
+          "when": "editorIsOpen"
         }
       ]
     },
@@ -173,6 +199,11 @@
       {
         "command": "patina.markQuestion",
         "key": "ctrl+alt+q",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "patina.editNote",
+        "key": "ctrl+alt+m",
         "when": "editorTextFocus"
       },
       {
@@ -369,7 +400,33 @@
               }
             ]
           },
-          "markdownDescription": "Text of end-of-line notes (`#patina.annotations.cursorLine#`, `#patina.annotations.staleLines#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question` (see `#patina.read.label#`, `#patina.edited.label#` and `#patina.categories#`)\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleLabel}`: `#patina.stale.label#` (stale only)\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised\n\nAdd `|lower`, `|upper` or `|capitalize` to change a placeholder's case: `was last {label|lower} {age} ago` gives `was last read 5h ago`."
+          "markdownDescription": "Text of end-of-line notes (`#patina.annotations.cursorLine#`, `#patina.annotations.staleLines#`) for each kind of mark: `read`, `edited` (read by typing), `stale` (changed outside the editor) and `category` (any static category). Add a category id as a key, such as `question`, to give that category its own text. Missing keys keep their defaults, and an empty string hides the note for that kind.\n\nEach value is a string, or a list of segments joined with ` · `. A segment is left out when any placeholder in it has nothing to report.\n\nPlaceholders:\n- `{label}`: the mark's label, such as `Read`, `Edited` or `Question` (see `#patina.read.label#`, `#patina.edited.label#` and `#patina.categories#`)\n- `{age}`, `{date}`: when the line was marked, such as `5h` or `2026-11-04 14:30`\n- `{note}`: the line's note. Without it, a note follows the text (see `#patina.notes.format#`)\n- `{faded}`: how far a read mark has faded, in percent\n- `{staleLabel}`: `#patina.stale.label#` (stale only)\n- `{staleAge}`, `{staleDate}`: when the change outside the editor was detected (stale only)\n- `{removed}`: marked lines deleted next to this one (stale only); `{removed:line}` adds the word, pluralised\n\nAdd `|lower`, `|upper` or `|capitalize` to change a placeholder's case: `was last {label|lower} {age} ago` gives `was last read 5h ago`."
+        },
+        "patina.notes.allLines": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show your notes at the end of every line that has one, not just the cursor line. Add or edit a note with **Patina: Add or Edit Note on Line…** (`ctrl+alt+m`) or from a marked line's hover."
+        },
+        "patina.notes.format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "default": "✎ {note}",
+          "markdownDescription": "Text of a note at the end of its line, with a `{note}` placeholder. On the cursor line (and on stale lines with `#patina.annotations.staleLines#`) it follows the mark's own text, unless that kind's template in `#patina.annotations.format#` places `{note}` itself."
+        },
+        "patina.notes.maxLength": {
+          "type": "number",
+          "default": 80,
+          "minimum": 10,
+          "markdownDescription": "Notes longer than this are cut short with `…` at the end of the line and in folded-block summaries. The hover shows them in full."
         },
         "patina.fold.summary": {
           "type": "string",
@@ -394,7 +451,8 @@
             "edited": "",
             "categories": "{categories}",
             "stale": "⚠ {stale:line} changed outside editor",
-            "staleAge": "most recently {staleNewest} ago"
+            "staleAge": "most recently {staleNewest} ago",
+            "notes": "✎ {noteList}"
           },
           "properties": {
             "read": {
@@ -420,12 +478,16 @@
             "staleAge": {
               "type": "string",
               "description": "How long ago the most recent change outside the editor was detected."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Notes on the block's lines, its first line included."
             }
           },
           "additionalProperties": {
             "type": "string"
           },
-          "markdownDescription": "Segments of the folded-block summary, joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Questions, 1 Attend to next` (a category's `plural` is used for counts other than one); `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
+          "markdownDescription": "Segments of the folded-block summary, joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, `notes`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{notes}`, `{noteList}`: number of notes, and the notes themselves joined with ` | ` (cut to `#patina.notes.maxLength#`, with `+N more` for the rest)\n- `{categories}`: counts per category, e.g. `2 Questions, 1 Attend to next` (a category's `plural` is used for counts other than one); `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
         },
         "patina.fold.highlight": {
           "type": "boolean",

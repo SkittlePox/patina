@@ -161,6 +161,47 @@ export async function run(): Promise<void> {
     await waitFor(() => ed.visibleRanges.length === 1, 'unfold');
     assert.equal(api.renderer.annotations(ed).get(0), undefined);
   });
+
+  await step('notes show on every line, survive re-marking and typing, and fold into the summary', async () => {
+    const f = vscode.Uri.joinPath(ws, 'notes.txt');
+    fs.writeFileSync(f.fsPath, ['block:', '  one', '  two', '  three', '  four', '  five', 'after'].join('\n') + '\n');
+    const d = await vscode.workspace.openTextDocument(f);
+    const ed = await vscode.window.showTextDocument(d);
+    ed.selection = new vscode.Selection(0, 0, 5, 6);
+    await vscode.commands.executeCommand('patina.markQuestion');
+    const marks = api.store.get(f)!;
+    marks.setNote(0, 'header note');
+    marks.setNote(2, 'why two?');
+    api.store.changed([f]);
+    ed.selection = new vscode.Selection(6, 0, 6, 0);
+    let notes = api.renderer.annotations(ed);
+    assert.equal(notes.get(0), '✎ header note');
+    assert.equal(notes.get(2), '✎ why two?');
+    assert.equal(notes.get(1), undefined);
+    ed.selection = new vscode.Selection(2, 0, 2, 0);
+    assert.match(api.renderer.annotations(ed).get(2)!, /^Question · \S+ ago · ✎ why two\?$/);
+
+    // Re-marking as read and typing on the line keep the note.
+    await vscode.commands.executeCommand('patina.markRead');
+    assert.equal(marks.get(2)!.cat, 'read');
+    await ed.edit((b) => b.insert(new vscode.Position(2, 5), '!'));
+    await waitFor(() => marks.get(2)?.edited === true, 'typed edit');
+    assert.equal(marks.get(2)!.note, 'why two?');
+
+    ed.selection = new vscode.Selection(6, 0, 6, 0);
+    await vscode.commands.executeCommand('editor.fold', { selectionLines: [0] });
+    await waitFor(() => ed.visibleRanges.length > 1, 'fold to split visible ranges');
+    notes = api.renderer.annotations(ed);
+    assert.ok(notes.get(0)!.endsWith('✎ header note | why two?'), notes.get(0));
+    await vscode.commands.executeCommand('editor.unfold', { selectionLines: [0] });
+    await waitFor(() => ed.visibleRanges.length === 1, 'unfold');
+
+    await vscode.commands.executeCommand('patina.removeNote', { uri: f.toString(), line: 0 });
+    assert.equal(marks.get(0)!.note, undefined);
+    ed.selection = new vscode.Selection(2, 0, 2, 0);
+    await vscode.commands.executeCommand('patina.clearMarks');
+    assert.equal(marks.get(2), undefined);
+  });
 }
 
 function sleep(ms: number) {
