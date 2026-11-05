@@ -46,10 +46,12 @@ The editor's right-click menu has a **Patina** submenu with the same actions.
 // settings.json
 "patina.categories": {
   "next":     { "label": "Attend to next" },
-  "question": { "label": "Question" },
-  "todo":     { "label": "Todo", "color": "rgba(255, 150, 0, 0.22)" }
+  "question": { "label": "Question", "plural": "Questions" },
+  "todo":     { "label": "Todo", "plural": "Todos", "color": "rgba(255, 150, 0, 0.22)" }
 }
 ```
+
+`plural` is used in counts other than one, such as `2 Questions` in a folded block's summary. Without it, counts use the label as written (`2 Attend to next`).
 
 ```jsonc
 // keybindings.json
@@ -92,7 +94,7 @@ Categories without colors take them from the palette. Custom categories get the 
 When you fold a block, the end of its first line shows a summary of the marks inside it, for example:
 
 ```
-Contents 60% read · avg 3h ago · 2 Question · ⚠ 1 line changed outside editor · most recently 2h ago
+Contents 60% read · avg 3h ago · 2 Questions · ⚠ 1 line changed outside editor · most recently 2h ago
 ```
 
 The summary replaces the first line's own end-of-line note. Blocks that hide fewer than `patina.fold.summaryMinLines` lines (default 5), such as a short argument list, show their summary only while the cursor is on their first line. They still get the blended highlight.
@@ -118,7 +120,7 @@ The text comes from `patina.fold.summaryFormat`, a set of named segments joined 
 | `{readAge}`, `{readNewest}`, `{readOldest}` | Average, most recent and oldest read age (`5m`, `3h`, `2d`) |
 | `{edited}`, `{editedAge}`, `{editedNewest}` | Lines you typed on, their average and most recent age |
 | `{stale}`, `{staleNewest}` | Lines changed outside the editor, most recent detection age |
-| `{categories}` | Per-category counts, such as `2 Question, 1 Attend to next` |
+| `{categories}` | Per-category counts, such as `2 Questions, 1 Attend to next` (see `plural` under [Categories](#categories-and-keybindings)) |
 | `{cat.<id>}` | Count for one category, such as `{cat.question}` |
 
 `{name:word}` on a count adds a pluralised word: `{edited:line}` gives `1 line` or `14 lines`.
@@ -166,7 +168,7 @@ The end-of-line note uses the theme color `patina.annotationForeground`, which y
 | --- | --- | --- |
 | `patina.palette` | `supermuted` | Built-in palette |
 | `patina.highlightStyle` | `background` | `background`: tint the line. `gutter`: bar left of the line numbers. `gutterAndBackground`: both |
-| `patina.categories` | `next`, `question` | Static categories: label, optional `color` and `gutterColor` |
+| `patina.categories` | `next`, `question` | Static categories: label, optional `plural`, `color` and `gutterColor` |
 | `patina.read.label` | `Read` | |
 | `patina.edited.label` | `Edited` | Label for lines read by typing on them |
 | `patina.read.fadeDays` | `30` | How long a read mark takes to fully fade |

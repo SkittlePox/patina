@@ -618,3 +618,17 @@ test('placeholders: case filters', () => {
   assert.equal(formatSummary(['{label|upper}', '{cat|capitalize}', '{n:line|upper}', '{label|bogus}'], v), 'READ · Attend to next · 2 LINES · Read');
   assert.equal(formatSummary(['{missing|lower} x', 'kept'], v), 'kept');
 });
+
+test('fold summary: category counts use a plural label when given', () => {
+  const lines = ['a', 'b', 'c', 'd'];
+  const fm = new FileMarks();
+  fm.mark(0, 1, 'question', T0, src(lines));
+  fm.mark(2, 2, 'next', T0, src(lines));
+  const plural: Record<string, string> = { question: 'Questions' };
+  const label: Record<string, string> = { question: 'Question', next: 'Attend to next' };
+  const labelFor = (c: string, n: number) => (n !== 1 && plural[c] ? plural[c] : label[c]);
+  const v = summaryValues(blockStats(fm, src(lines), 0, 3, T1), labelFor, ['next', 'question']);
+  assert.equal(v.get('categories'), '1 Attend to next, 2 Questions');
+  fm.clear(1, 1);
+  assert.equal(summaryValues(blockStats(fm, src(lines), 0, 3, T1), labelFor, ['next', 'question']).get('categories'), '1 Attend to next, 1 Question');
+});

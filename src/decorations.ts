@@ -8,7 +8,7 @@ import { blockStats, FoldedGap, foldedGaps, formatSummary, lastUnclosedBracket, 
 import { FileMarks, LineMark, LineSource, READ } from './core/marks';
 import { ResolvedSet } from './core/palettes';
 import { formatLineNote } from './core/lineNote';
-import { categoryLabel, FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
+import { categoryCountLabel, FALLBACK_COLOR, markLabel, PatinaConfig } from './config';
 import { MarkStore } from './store';
 
 
@@ -283,7 +283,7 @@ export class DecorationRenderer implements vscode.Disposable {
     for (const gap of this.gapsOf(editor)) {
       if ((gap.minor || this.cfg.foldSummary === 'cursorLine') && !(active && gap.header === cursor)) continue;
       const stats = blockStats(marks, src, gap.start, gap.end, now);
-      const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c) => categoryLabel(this.cfg, c), order));
+      const text = formatSummary(this.cfg.foldSummaryFormat, summaryValues(stats, (c, n) => categoryCountLabel(this.cfg, c, n), order));
       if (text) notes.set(gap.header, text);
     }
     return notes;

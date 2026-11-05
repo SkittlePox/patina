@@ -60,11 +60,11 @@ export type SummaryValue = number | string | undefined;
 
 /**
  * Placeholder values for a block. Counts are numbers; ages are short strings like `3h`.
- * `labelFor` turns a category id into its display label; `categoryOrder` lists ids in settings order.
+ * `labelFor` gives a category's display label for a count (so it can pluralise); `categoryOrder` lists ids in settings order.
  */
 export function summaryValues(
   s: BlockStats,
-  labelFor: (cat: string) => string,
+  labelFor: (cat: string, count: number) => string,
   categoryOrder: readonly string[],
 ): Map<string, SummaryValue> {
   const age = (ms: number | undefined) => (ms === undefined ? undefined : shortAge(ms));
@@ -83,7 +83,7 @@ export function summaryValues(
   v.set('staleNewest', age(s.staleNewest));
   const ids = [...categoryOrder.filter((id) => s.categories.has(id)), ...[...s.categories.keys()].filter((id) => !categoryOrder.includes(id))];
   for (const id of ids) v.set(`cat.${id}`, s.categories.get(id)!);
-  v.set('categories', ids.map((id) => `${s.categories.get(id)} ${labelFor(id)}`).join(', ') || undefined);
+  v.set('categories', ids.map((id) => `${s.categories.get(id)} ${labelFor(id, s.categories.get(id)!)}`).join(', ') || undefined);
   return v;
 }
 

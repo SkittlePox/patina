@@ -2,7 +2,7 @@
   "name": "patina",
   "displayName": "Patina",
   "description": "Track which lines of a codebase you've read, when, and whether they've changed since.",
-  "version": "0.18.4",
+  "version": "0.19.0",
   "publisher": "local",
   "icon": "media/icon.png",
   "repository": {
@@ -205,19 +205,23 @@
         },
         "patina.categories": {
           "type": "object",
-          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has an optional `label`, and optional `color` (background) and `gutterColor` (gutter bar) — any CSS color, e.g. `rgba(255, 150, 0, 0.22)`. Without colors, a category uses the palette's color (custom categories get the palette's extra colors in order). If only `color` is set, the gutter uses a more opaque version of it. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
+          "markdownDescription": "Static mark categories (everything except the special `read` category). Keys are category ids; each value has an optional `label`, an optional `plural` used in counts other than one (`2 Questions`; defaults to the label), and optional `color` (background) and `gutterColor` (gutter bar) — any CSS color, e.g. `rgba(255, 150, 0, 0.22)`. Without colors, a category uses the palette's color (custom categories get the palette's extra colors in order). If only `color` is set, the gutter uses a more opaque version of it. Bind a key to a custom category with the `patina.mark` command and `\"args\": { \"category\": \"<id>\" }`.",
           "default": {
             "next": {
               "label": "Attend to next"
             },
             "question": {
-              "label": "Question"
+              "label": "Question",
+              "plural": "Questions"
             }
           },
           "additionalProperties": {
             "type": "object",
             "properties": {
               "label": {
+                "type": "string"
+              },
+              "plural": {
                 "type": "string"
               },
               "color": {
@@ -357,7 +361,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "markdownDescription": "Segments of the folded-block summary, joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Question, 1 Attend to next`; `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
+          "markdownDescription": "Segments of the folded-block summary, joined with ` · ` in this order: `read`, `readAge`, `edited`, `categories`, `stale`, `staleAge`, then any keys you add. Set a segment to an empty string to hide it. Keys you leave out keep their defaults. A segment is left out when any placeholder in it has nothing to report (a count of zero, or an age with no lines to measure).\n\nPlaceholders (counts are of non-blank lines; ages look like `5m`, `3h`, `2d`):\n- `{lines}`, `{read}`, `{unread}`, `{readPercent}`: lines in the block, read lines (including lines you typed), unread lines, read percentage\n- `{readAge}`, `{readNewest}`, `{readOldest}`: average, most recent and oldest read age\n- `{edited}`, `{editedAge}`, `{editedNewest}`: lines you typed on, their average and most recent age\n- `{stale}`, `{staleNewest}`: lines changed outside the editor, most recent detection age\n- `{categories}`: counts per category, e.g. `2 Questions, 1 Attend to next` (a category's `plural` is used for counts other than one); `{cat.<id>}`: count for one category, e.g. `{cat.question}`\n\nWrite `{name:word}` on a count to add a pluralised word: `{edited:line}` gives `1 line` or `14 lines`. Add `|lower`, `|upper` or `|capitalize` to change the case, such as `{categories|lower}`."
         },
         "patina.fold.highlight": {
           "type": "boolean",

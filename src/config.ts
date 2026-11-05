@@ -8,6 +8,8 @@ import { DEFAULT_LINE_NOTE_FORMATS, LineNoteFormats } from './core/lineNote';
 export interface CategoryDef {
   id: string;
   label: string;
+  /** Label for counts other than one, e.g. `2 Questions`. Defaults to `label`. */
+  plural?: string;
 }
 
 export type HighlightStyle = 'background' | 'gutter' | 'gutterAndBackground';
@@ -66,10 +68,10 @@ export function readConfig(): PatinaConfig {
   const c = vscode.workspace.getConfiguration('patina');
   const categories = new Map<string, CategoryDef>();
   const categoryColors: { id: string; color?: string; gutterColor?: string }[] = [];
-  const raw = c.get<Record<string, { label?: string; color?: string; gutterColor?: string }>>('categories') ?? {};
+  const raw = c.get<Record<string, { label?: string; plural?: string; color?: string; gutterColor?: string }>>('categories') ?? {};
   for (const [id, def] of Object.entries(raw)) {
     if (id === READ || !def) continue;
-    categories.set(id, { id, label: def.label || id });
+    categories.set(id, { id, label: def.label || id, plural: def.plural || undefined });
     categoryColors.push({ id, color: def.color, gutterColor: def.gutterColor });
   }
   const paletteSetting = c.get<string>('palette') ?? '';
@@ -131,6 +133,12 @@ function foldSummaryFormat(raw: unknown): string[] {
 /** Label for a specific mark: read marks created by typing use the edited label. */
 export function markLabel(cfg: PatinaConfig, m: LineMark): string {
   return m.cat === READ && m.edited ? cfg.editedLabel : categoryLabel(cfg, m.cat);
+}
+
+/** Category label for a count: the category's `plural` when the count isn't one (if it has one). */
+export function categoryCountLabel(cfg: PatinaConfig, cat: string, count: number): string {
+  const def = cfg.categories.get(cat);
+  return count !== 1 && def?.plural ? def.plural : categoryLabel(cfg, cat);
 }
 
 export function categoryLabel(cfg: PatinaConfig, cat: string): string {
